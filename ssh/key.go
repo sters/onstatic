@@ -7,7 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -21,17 +21,17 @@ type Key struct {
 
 // Save private and public keys to directory
 func (k *Key) Save(dir string) error {
-	dir = path.Clean(dir)
+	dir = filepath.Clean(dir)
 	if s, err := os.Stat(dir); err != nil {
 		return err
 	} else if !s.IsDir() {
 		return fmt.Errorf("failed to load directory: %s", dir)
 	}
 
-	if err := k.savePrivateKey(path.Join(dir, k.privateKeyName)); err != nil {
+	if err := k.savePrivateKey(filepath.Join(dir, k.privateKeyName)); err != nil {
 		return err
 	}
-	if err := k.savePublicKey(path.Join(dir, k.publicKeyName)); err != nil {
+	if err := k.savePublicKey(filepath.Join(dir, k.publicKeyName)); err != nil {
 		return err
 	}
 
