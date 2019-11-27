@@ -1,1 +1,3 @@
 # staticman
+
+Status: WIP
