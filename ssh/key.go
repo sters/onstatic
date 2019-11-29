@@ -45,9 +45,14 @@ func (k *Key) savePrivateKey(filename string) error {
 		return err
 	}
 
+	b, err := x509.MarshalPKCS8PrivateKey(k.PrivateKey)
+	if err != nil {
+		return err
+	}
+
 	return pem.Encode(f, &pem.Block{
 		Type:  "PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(k.PrivateKey),
+		Bytes: b,
 	})
 }
 
@@ -58,7 +63,7 @@ func (k *Key) savePublicKey(filename string) error {
 		return err
 	}
 
-	pk, err := ssh.NewPublicKey(k.PublicKey)
+	pk, err := ssh.NewPublicKey(&k.PublicKey)
 	if err != nil {
 		return err
 	}
