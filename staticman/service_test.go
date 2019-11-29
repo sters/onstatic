@@ -54,4 +54,15 @@ func TestConfigureRepository(t *testing.T) {
 	// if err := doGitPull(repo); err != nil {
 	// 	t.Error(err)
 	// }
+
+	t.Log("loadLocalRepository")
+	repo, err = loadLocalRepository(generateDirectoryName(reponame))
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log("cleanRepo")
+	if err := cleanRepo(repo); err != nil {
+		t.Error(err)
+	}
 }

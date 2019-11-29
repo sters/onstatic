@@ -43,6 +43,15 @@ func getSSHPubKeyRelatedPath() string {
 	return filepath.Clean(filepath.Join(keyDirectoryRelatedFromRepository, sshPubKeyFilename))
 }
 
+func cleanRepo(repo *git.Repository) error {
+	w, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	return os.RemoveAll(w.Filesystem.Root())
+}
+
 func generateDirectoryName(n string) string {
 	s := sha1.New()
 	s.Write([]byte(salt))
