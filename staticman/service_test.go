@@ -27,7 +27,9 @@ func TestConfigureRepository(t *testing.T) {
 	})
 
 	t.Log("createLocalRepositroy")
-	repo, err := createLocalRepositroy("foo")
+	reponame := "git@github.com:sters/staticman.git"
+	dirname := generateDirectoryName(reponame)
+	repo, err := createLocalRepositroy(dirname)
 	if err != nil {
 		t.Error(err)
 	}
@@ -43,7 +45,7 @@ func TestConfigureRepository(t *testing.T) {
 	}
 
 	t.Log("configureOriginRepository")
-	if err := configureOriginRepository(repo, "git@github.com:sters/staticman.git"); err != nil {
+	if err := configureOriginRepository(repo, reponame); err != nil {
 		t.Error(err)
 	}
 

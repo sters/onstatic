@@ -65,6 +65,17 @@ func createLocalRepositroy(reponame string) (*git.Repository, error) {
 	)
 }
 
+func loadLocalRepository(reponame string) (*git.Repository, error) {
+	dir := filepath.Clean(filepath.Join(getRepositoriesDir(), reponame))
+	return git.Open(
+		filesystem.NewStorage(
+			osfs.New(filepath.Join(dir, ".git")),
+			cache.NewObjectLRUDefault(),
+		),
+		osfs.New(filepath.Join(dir)),
+	)
+}
+
 func generateNewDeploySSHKey(repo *git.Repository) error {
 	key, err := ssh.GenerateKey(sshKeySize, sshKeyFilename, sshPubKeyFilename)
 	if err != nil {
