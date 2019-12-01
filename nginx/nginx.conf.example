@@ -1,0 +1,12 @@
+server {
+    set staticman_root /var/www/staticman
+
+    listen 80;
+    server_name ~^(?<repo>.*)\.example\.com$;
+    if (!-d $staticman_root/repositories/$repo) {
+        rewrite . https://example.com/ redirect;
+    }
+
+    root $staticman_root/repositories/$repo;
+    access_log /var/log/nginx/$repo.access.log;
+}
