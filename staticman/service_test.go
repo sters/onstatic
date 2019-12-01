@@ -1,6 +1,7 @@
 package staticman
 
 import (
+	"github.com/sters/staticman/conf"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,8 @@ func Test_generateDirectoryName(t *testing.T) {
 }
 
 func TestConfigureRepository(t *testing.T) {
+	conf.Init()
+
 	filepath.Walk(getRepositoriesDir(), func(path string, info os.FileInfo, err error) error {
 		if err != nil || path == getRepositoriesDir() || strings.Contains(path, ".gitkeep") {
 			return nil

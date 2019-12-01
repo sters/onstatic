@@ -2,25 +2,29 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/sters/staticman/conf"
 	"github.com/sters/staticman/http"
 	"github.com/sters/staticman/staticman"
 )
 
 func main() {
+	conf.Init()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	const port = ":18888"
-	server, err := http.NewServer(port)
+	server, err := http.NewServer(conf.Variables.HTTPPort)
 	if err != nil {
 		panic(err)
 	}
 	staticman.RegisterHandler(server.Mux)
 
+	log.Print("server starting")
 	go func() { _ = server.Run() }()
 
 	sigCh := make(chan os.Signal, 1)

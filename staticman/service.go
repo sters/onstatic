@@ -3,10 +3,12 @@ package staticman
 import (
 	"crypto/sha1"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 
+	"github.com/sters/staticman/conf"
 	"github.com/sters/staticman/ssh"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 	"gopkg.in/src-d/go-git.v4"
@@ -16,31 +18,30 @@ import (
 	"gopkg.in/src-d/go-git.v4/storage/filesystem"
 )
 
-const (
-	// TODO: temoporary, move to env
-	salt                              = "saltsaltsalt"
-	sshKeySize                        = 4096
-	sshKeyFilename                    = "id_rsa"
-	sshPubKeyFilename                 = "id_rsa.pub"
-	repositoriesDirectory             = "../repositories/"
-	keyDirectoryRelatedFromRepository = "."
-)
-
 func repoToDir(r *git.Repository) string {
 	return r.Storer.(*filesystem.Storage).Filesystem().Root()
 }
 
 func getRepositoriesDir() string {
-	// TODO: temoporary, move to env
 	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Clean(filepath.Join(filepath.Dir(filename), repositoriesDirectory))
+	return filepath.Clean(filepath.Join(
+		filepath.Dir(filename),
+		"../",
+		conf.Variables.RepositoriesDirectory,
+	))
 }
 
 func getSSHKeyRelatedPath() string {
-	return filepath.Clean(filepath.Join(keyDirectoryRelatedFromRepository, sshKeyFilename))
+	return filepath.Clean(filepath.Join(
+		conf.Variables.KeyDirectoryRelatedFromRepository,
+		conf.Variables.SSHKeyFilename,
+	))
 }
 func getSSHPubKeyRelatedPath() string {
-	return filepath.Clean(filepath.Join(keyDirectoryRelatedFromRepository, sshPubKeyFilename))
+	return filepath.Clean(filepath.Join(
+		conf.Variables.KeyDirectoryRelatedFromRepository,
+		conf.Variables.SSHPubKeyFilename,
+	))
 }
 
 func cleanRepo(repo *git.Repository) error {
@@ -54,7 +55,7 @@ func cleanRepo(repo *git.Repository) error {
 
 func generateDirectoryName(n string) string {
 	s := sha1.New()
-	s.Write([]byte(salt))
+	s.Write([]byte(conf.Variables.Salt))
 	s.Write([]byte(n))
 	return fmt.Sprintf("%x", s.Sum(nil))
 }
@@ -86,12 +87,16 @@ func loadLocalRepository(reponame string) (*git.Repository, error) {
 }
 
 func generateNewDeploySSHKey(repo *git.Repository) error {
-	key, err := ssh.GenerateKey(sshKeySize, sshKeyFilename, sshPubKeyFilename)
+	key, err := ssh.GenerateKey(
+		conf.Variables.SSHKeySize,
+		conf.Variables.SSHKeyFilename,
+		conf.Variables.SSHPubKeyFilename,
+	)
 	if err != nil {
 		return err
 	}
 
-	dir := filepath.Join(repoToDir(repo), keyDirectoryRelatedFromRepository)
+	dir := filepath.Join(repoToDir(repo), conf.Variables.KeyDirectoryRelatedFromRepository)
 	if err := key.Save(dir); err != nil {
 		return err
 	}
@@ -114,6 +119,16 @@ func configureSSHKey(repo *git.Repository) error {
 	)
 
 	return nil
+}
+
+func getSSHPublicKeyContent(repo *git.Repository) ([]byte, error) {
+	s := filepath.Clean(filepath.Join(
+		repoToDir(repo),
+		conf.Variables.KeyDirectoryRelatedFromRepository,
+		conf.Variables.SSHPubKeyFilename,
+	))
+
+	return ioutil.ReadFile(s)
 }
 
 func configureOriginRepository(repo *git.Repository, originURL string) error {
