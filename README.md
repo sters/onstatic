@@ -1,3 +1,3 @@
 # staticman
 
-Status: WIP
+staticman is static page hosting controller.
