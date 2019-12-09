@@ -1,7 +1,7 @@
-package staticman
+package onstatic
 
 import (
-	"github.com/sters/staticman/conf"
+	"github.com/sters/onstatic/conf"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +30,7 @@ func TestConfigureRepository(t *testing.T) {
 	})
 
 	t.Log("createLocalRepositroy")
-	reponame := "git@github.com:sters/staticman.git"
+	reponame := "git@github.com:sters/onstatic.git"
 	dirname := generateDirectoryName(reponame)
 	repo, err := createLocalRepositroy(dirname)
 	if err != nil {

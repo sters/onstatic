@@ -1,11 +1,11 @@
-package staticman
+package onstatic
 
 import (
 	"log"
 	"net/http"
 	"strings"
 
-	"github.com/sters/staticman/conf"
+	"github.com/sters/onstatic/conf"
 )
 
 // RegisterHandler define http request handler
@@ -87,8 +87,8 @@ func RegisterHandler(s *http.ServeMux) {
 }
 
 const (
-	validateKey = "X-STATICMAN-KEY"
-	repoKey     = "X-STATICMAN-REPONAME"
+	validateKey = "X-ONSTATIC-KEY"
+	repoKey     = "X-ONSTATIC-REPONAME"
 )
 
 func validate(res http.ResponseWriter, req *http.Request) bool {

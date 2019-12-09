@@ -1,4 +1,4 @@
-package staticman
+package onstatic
 
 import (
 	"crypto/sha1"
@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/sters/staticman/conf"
-	"github.com/sters/staticman/ssh"
+	"github.com/sters/onstatic/conf"
+	"github.com/sters/onstatic/ssh"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"

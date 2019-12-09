@@ -23,14 +23,14 @@ type c struct {
 // Init configuration variales
 func Init() {
 	Variables = c{
-		HTTPPort:                          getenv("STATICMAN_HTTP_PORT", "18888"),
-		Salt:                              getenv("STATICMAN_SALT", "saltsaltsalt"),
-		SSHKeySize:                        getenvInt("STATICMAN_SSH_KEY_SIZE", 4096),
-		SSHKeyFilename:                    getenv("STATICMAN_SSH_KEY_FILENAME", "id_rsa"),
-		SSHPubKeyFilename:                 getenv("STATICMAN_SSH_PUB_KEY_FILENAME", "id_rsa.pub"),
-		RepositoriesDirectory:             getenv("STATICMAN_REPOSITORIES_DIRECTORY", "repositories/"),
-		KeyDirectoryRelatedFromRepository: getenv("STATICMAN_KEY_DIRECTORY_RELATED_FROM_REPOSITORY", "."),
-		HTTPHeaderKey:                     getenv("STATICMAN_HTTP_HEADER_KEY", "staticmanstaticmanstaticman"),
+		HTTPPort:                          getenv("ONSTATIC_HTTP_PORT", "18888"),
+		Salt:                              getenv("ONSTATIC_SALT", "saltsaltsalt"),
+		SSHKeySize:                        getenvInt("ONSTATIC_SSH_KEY_SIZE", 4096),
+		SSHKeyFilename:                    getenv("ONSTATIC_SSH_KEY_FILENAME", "id_rsa"),
+		SSHPubKeyFilename:                 getenv("ONSTATIC_SSH_PUB_KEY_FILENAME", "id_rsa.pub"),
+		RepositoriesDirectory:             getenv("ONSTATIC_REPOSITORIES_DIRECTORY", "repositories/"),
+		KeyDirectoryRelatedFromRepository: getenv("ONSTATIC_KEY_DIRECTORY_RELATED_FROM_REPOSITORY", "."),
+		HTTPHeaderKey:                     getenv("ONSTATIC_HTTP_HEADER_KEY", "onstaticonstaticonstatic"),
 	}
 }
 

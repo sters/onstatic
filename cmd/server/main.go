@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sters/staticman/conf"
-	"github.com/sters/staticman/http"
-	"github.com/sters/staticman/staticman"
+	"github.com/sters/onstatic/conf"
+	"github.com/sters/onstatic/http"
+	"github.com/sters/onstatic/onstatic"
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	staticman.RegisterHandler(server.Mux)
+	onstatic.RegisterHandler(server.Mux)
 
 	log.Print("server starting")
 	go func() { _ = server.Run() }()

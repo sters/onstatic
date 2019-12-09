@@ -1,3 +1,7 @@
-# staticman
+# onstatic
 
-staticman is static page hosting controller.
+onstatic is static page hosting controller.
+
+```
+go run cmd/server/main.go
+```
