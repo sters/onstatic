@@ -8,6 +8,7 @@ import (
 // Server for http
 type Server struct {
 	port string
+	ln   net.Listener
 	http *http.Server
 	Mux  *http.ServeMux
 }
@@ -18,8 +19,9 @@ func (s *Server) Run() error {
 	if err != nil {
 		return err
 	}
+	s.ln = ln
 
-	if err := s.http.Serve(ln); err != nil && err != http.ErrServerClosed {
+	if err := s.http.Serve(s.ln); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 
@@ -28,6 +30,9 @@ func (s *Server) Run() error {
 
 // Close this http server
 func (s *Server) Close() error {
+	if s.ln != nil {
+		_ = s.ln.Close()
+	}
 	return s.http.Close()
 }
 

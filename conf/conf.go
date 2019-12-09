@@ -10,6 +10,7 @@ import (
 var Variables c
 
 type c struct {
+	CGIMode                           bool
 	HTTPPort                          string
 	Salt                              string
 	SSHKeySize                        int
@@ -22,15 +23,17 @@ type c struct {
 
 // Init configuration variales
 func Init() {
+	const prefix = "ONSTATIC_"
 	Variables = c{
-		HTTPPort:                          getenv("ONSTATIC_HTTP_PORT", "18888"),
-		Salt:                              getenv("ONSTATIC_SALT", "saltsaltsalt"),
-		SSHKeySize:                        getenvInt("ONSTATIC_SSH_KEY_SIZE", 4096),
-		SSHKeyFilename:                    getenv("ONSTATIC_SSH_KEY_FILENAME", "id_rsa"),
-		SSHPubKeyFilename:                 getenv("ONSTATIC_SSH_PUB_KEY_FILENAME", "id_rsa.pub"),
-		RepositoriesDirectory:             getenv("ONSTATIC_REPOSITORIES_DIRECTORY", "repositories/"),
-		KeyDirectoryRelatedFromRepository: getenv("ONSTATIC_KEY_DIRECTORY_RELATED_FROM_REPOSITORY", "."),
-		HTTPHeaderKey:                     getenv("ONSTATIC_HTTP_HEADER_KEY", "onstaticonstaticonstatic"),
+		CGIMode:                           getenvBool(prefix+"CGI_MODE", false),
+		HTTPPort:                          getenv(prefix+"HTTP_PORT", "18888"),
+		Salt:                              getenv(prefix+"SALT", "saltsaltsalt"),
+		SSHKeySize:                        getenvInt(prefix+"SSH_KEY_SIZE", 4096),
+		SSHKeyFilename:                    getenv(prefix+"SSH_KEY_FILENAME", "id_rsa"),
+		SSHPubKeyFilename:                 getenv(prefix+"SSH_PUB_KEY_FILENAME", "id_rsa.pub"),
+		RepositoriesDirectory:             getenv(prefix+"REPOSITORIES_DIRECTORY", "repositories/"),
+		KeyDirectoryRelatedFromRepository: getenv(prefix+"KEY_DIRECTORY_RELATED_FROM_REPOSITORY", "."),
+		HTTPHeaderKey:                     getenv(prefix+"HTTP_HEADER_KEY", "onstaticonstaticonstatic"),
 	}
 }
 
@@ -43,8 +46,16 @@ func getenv(k string, d string) string {
 }
 
 func getenvInt(k string, d int) int {
-	n, _ := strconv.Atoi(getenv(k, ""))
-	if n == 0 {
+	n, e := strconv.Atoi(getenv(k, ""))
+	if e != nil {
+		return d
+	}
+	return n
+}
+
+func getenvBool(k string, d bool) bool {
+	n, e := strconv.ParseBool((getenv(k, "")))
+	if e != nil {
 		return d
 	}
 	return n

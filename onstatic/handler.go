@@ -12,7 +12,7 @@ import (
 func RegisterHandler(s *http.ServeMux) {
 	s.HandleFunc("/register", func(res http.ResponseWriter, req *http.Request) {
 		if !validate(res, req) {
-			log.Print("failed to validate", req.Header)
+			log.Print("onstatic: failed to validate", req.Header)
 			res.WriteHeader(500)
 			return
 		}
@@ -21,24 +21,24 @@ func RegisterHandler(s *http.ServeMux) {
 		dirname := generateDirectoryName(reponame)
 		repo, err := createLocalRepositroy(dirname)
 		if err != nil {
-			log.Print("failed to create localrepo", err)
+			log.Print("onstatic: failed to create localrepo", err)
 			res.WriteHeader(500)
 			return
 		}
 		if err := generateNewDeploySSHKey(repo); err != nil {
-			log.Print("failed to create sshkey", err)
+			log.Print("onstatic: failed to create sshkey", err)
 			_ = cleanRepo(repo)
 			res.WriteHeader(500)
 			return
 		}
 		if err := configureSSHKey(repo); err != nil {
-			log.Print("failed to create configure sshkey", err)
+			log.Print("onstatic: failed to create configure sshkey", err)
 			_ = cleanRepo(repo)
 			res.WriteHeader(500)
 			return
 		}
 		if err := configureOriginRepository(repo, reponame); err != nil {
-			log.Print("failed to create configure origin", err)
+			log.Print("onstatic: failed to create configure origin", err)
 			_ = cleanRepo(repo)
 			res.WriteHeader(500)
 			return
@@ -46,7 +46,7 @@ func RegisterHandler(s *http.ServeMux) {
 
 		b, err := getSSHPublicKeyContent(repo)
 		if err != nil {
-			log.Print("failed to get public key", err)
+			log.Print("onstatic: failed to get public key", err)
 			_ = cleanRepo(repo)
 			res.WriteHeader(500)
 			return
@@ -59,7 +59,7 @@ func RegisterHandler(s *http.ServeMux) {
 
 	s.HandleFunc("/pull", func(res http.ResponseWriter, req *http.Request) {
 		if !validate(res, req) {
-			log.Print("failed to validate", req.Header)
+			log.Print("onstatic: failed to validate", req.Header)
 			res.WriteHeader(500)
 			return
 		}
@@ -69,13 +69,13 @@ func RegisterHandler(s *http.ServeMux) {
 		)
 		repo, err := loadLocalRepository(reponame)
 		if err != nil {
-			log.Print("failed to load repo", err)
+			log.Print("onstatic: failed to load repo", err)
 			res.WriteHeader(500)
 			return
 		}
 
 		if err := doGitPull(repo); err != nil {
-			log.Print("failed to gitpull", err)
+			log.Print("onstatic: failed to gitpull", err)
 			res.WriteHeader(500)
 			return
 		}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http/cgi"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,11 +21,20 @@ func main() {
 
 	server, err := http.NewServer(conf.Variables.HTTPPort)
 	if err != nil {
-		panic(err)
+		log.Fatal("main:", err)
 	}
 	onstatic.RegisterHandler(server.Mux)
 
-	log.Print("server starting")
+	if conf.Variables.CGIMode {
+		runCGIServerMode(ctx, server)
+		return
+	}
+
+	runHTTPServerMode(ctx, server)
+}
+
+func runHTTPServerMode(ctx context.Context, server *http.Server) {
+	log.Print("main: http server starting")
 	go func() { _ = server.Run() }()
 
 	sigCh := make(chan os.Signal, 1)
@@ -35,4 +45,14 @@ func main() {
 	}
 
 	_ = server.Close()
+}
+
+func runCGIServerMode(ctx context.Context, server *http.Server) {
+	log.Print("main: cgi server starting")
+
+	if e := cgi.Serve(server.Mux); e != nil {
+		log.Println("main:", e)
+	}
+
+	server.Close()
 }
