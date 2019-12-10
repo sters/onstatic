@@ -23,10 +23,9 @@ func repoToDir(r *git.Repository) string {
 }
 
 func getRepositoriesDir() string {
-	_, filename, _, _ := runtime.Caller(0)
+	d, _ := os.Getwd()
 	return filepath.Clean(filepath.Join(
-		filepath.Dir(filename),
-		"../",
+		d,
 		conf.Variables.RepositoriesDirectory,
 	))
 }
