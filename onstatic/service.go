@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"github.com/sters/onstatic/conf"
 	"github.com/sters/onstatic/ssh"
