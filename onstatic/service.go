@@ -37,6 +37,7 @@ func getSSHKeyRelatedPath() string {
 		conf.Variables.SSHKeyFilename,
 	))
 }
+
 func getSSHPubKeyRelatedPath() string {
 	return filepath.Clean(filepath.Join(
 		conf.Variables.KeyDirectoryRelatedFromRepository,
@@ -53,15 +54,19 @@ func cleanRepo(repo *git.Repository) error {
 	return os.RemoveAll(w.Filesystem.Root())
 }
 
-func generateDirectoryName(n string) string {
+func getHashedDirectoryName(n string) string {
 	s := sha1.New()
 	s.Write([]byte(conf.Variables.Salt))
 	s.Write([]byte(n))
 	return fmt.Sprintf("%x", s.Sum(nil))
 }
 
+func getRepositoryDirectoryPath(reponame string) string {
+	return filepath.Clean(filepath.Join(getRepositoriesDir(), reponame))
+}
+
 func createLocalRepositroy(reponame string) (*git.Repository, error) {
-	dir := filepath.Clean(filepath.Join(getRepositoriesDir(), reponame))
+	dir := getRepositoryDirectoryPath(reponame)
 	if err := os.Mkdir(dir, 0755); err != nil {
 		return nil, err
 	}
@@ -71,18 +76,18 @@ func createLocalRepositroy(reponame string) (*git.Repository, error) {
 			osfs.New(filepath.Join(dir, ".git")),
 			cache.NewObjectLRUDefault(),
 		),
-		osfs.New(filepath.Join(dir)),
+		osfs.New(dir),
 	)
 }
 
 func loadLocalRepository(reponame string) (*git.Repository, error) {
-	dir := filepath.Clean(filepath.Join(getRepositoriesDir(), reponame))
+	dir := getRepositoryDirectoryPath(reponame)
 	return git.Open(
 		filesystem.NewStorage(
 			osfs.New(filepath.Join(dir, ".git")),
 			cache.NewObjectLRUDefault(),
 		),
-		osfs.New(filepath.Join(dir)),
+		osfs.New(dir),
 	)
 }
 

@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -35,6 +36,8 @@ func Init() {
 		KeyDirectoryRelatedFromRepository: getenv(prefix+"KEY_DIRECTORY_RELATED_FROM_REPOSITORY", "."),
 		HTTPHeaderKey:                     getenv(prefix+"HTTP_HEADER_KEY", "onstaticonstaticonstatic"),
 	}
+
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
 func getenv(k string, d string) string {

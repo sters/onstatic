@@ -21,7 +21,7 @@ func main() {
 
 	server, err := http.NewServer(conf.Variables.HTTPPort)
 	if err != nil {
-		log.Fatal("main:", err)
+		log.Fatal(err)
 	}
 	onstatic.RegisterHandler(server.Mux)
 
@@ -34,7 +34,7 @@ func main() {
 }
 
 func runHTTPServerMode(ctx context.Context, server *http.Server) {
-	log.Print("main: http server starting")
+	log.Print("http server starting")
 	go func() { _ = server.Run() }()
 
 	sigCh := make(chan os.Signal, 1)
@@ -48,10 +48,10 @@ func runHTTPServerMode(ctx context.Context, server *http.Server) {
 }
 
 func runCGIServerMode(ctx context.Context, server *http.Server) {
-	log.Print("main: cgi server starting")
+	log.Print("cgi server starting")
 
 	if e := cgi.Serve(server.Mux); e != nil {
-		log.Println("main:", e)
+		log.Print(e)
 	}
 
 	server.Close()

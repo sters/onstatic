@@ -8,12 +8,12 @@ import (
 	"testing"
 )
 
-func Test_generateDirectoryName(t *testing.T) {
-	if generateDirectoryName("foo") == generateDirectoryName("bar") {
-		t.Error("failed to generateDirectoryName")
+func Test_getHashedDirectoryName(t *testing.T) {
+	if getHashedDirectoryName("foo") == getHashedDirectoryName("bar") {
+		t.Error("failed to getHashedDirectoryName")
 	}
-	if generateDirectoryName("foo") == generateDirectoryName("fooo") {
-		t.Error("failed to generateDirectoryName")
+	if getHashedDirectoryName("foo") == getHashedDirectoryName("fooo") {
+		t.Error("failed to getHashedDirectoryName")
 	}
 }
 
@@ -31,7 +31,7 @@ func TestConfigureRepository(t *testing.T) {
 
 	t.Log("createLocalRepositroy")
 	reponame := "git@github.com:sters/onstatic.git"
-	dirname := generateDirectoryName(reponame)
+	dirname := getHashedDirectoryName(reponame)
 	repo, err := createLocalRepositroy(dirname)
 	if err != nil {
 		t.Error(err)
@@ -59,7 +59,7 @@ func TestConfigureRepository(t *testing.T) {
 	// }
 
 	t.Log("loadLocalRepository")
-	repo, err = loadLocalRepository(generateDirectoryName(reponame))
+	repo, err = loadLocalRepository(getHashedDirectoryName(reponame))
 	if err != nil {
 		t.Error(err)
 	}
