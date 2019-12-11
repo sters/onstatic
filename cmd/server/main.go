@@ -48,8 +48,6 @@ func runHTTPServerMode(ctx context.Context, server *http.Server) {
 }
 
 func runCGIServerMode(ctx context.Context, server *http.Server) {
-	log.Print("cgi server starting")
-
 	if e := cgi.Serve(server.Mux); e != nil {
 		log.Print(e)
 	}
