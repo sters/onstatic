@@ -170,27 +170,27 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 func guessContentType(path string) string {
 	// useful one https://github.com/nginx/nginx/blob/master/conf/mime.types
 	switch filepath.Ext(path) {
-	case "html", "htm":
+	case ".html", ".htm":
 		return "text/html"
-	case "css":
+	case ".css":
 		return "text/css"
-	case "js":
+	case ".js":
 		return "application/javascript"
-	case "gif":
+	case ".gif":
 		return "image/gif"
-	case "jpeg", "jpg":
+	case ".jpeg", ".jpg":
 		return "image/jpeg"
-	case "png":
+	case ".png":
 		return "image/png"
-	case "svg", "svgz":
+	case ".svg", ".svgz":
 		return "image/svg+xml"
-	case "webp":
+	case ".webp":
 		return "image/webp"
-	case "ico":
+	case ".ico":
 		return "image/x-icon"
-	case "woff":
+	case ".woff":
 		return "font/woff"
-	case "woff2":
+	case ".woff2":
 		return "font/woff2"
 	}
 	return "text/plain"
