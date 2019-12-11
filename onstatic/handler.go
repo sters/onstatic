@@ -110,13 +110,43 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var ignoreContains = []string{
+		"/.", "/internal", "/bin/",
+	}
+	for _, c := range ignoreContains {
+		if strings.Contains(cleanedPath, c) {
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+	}
+
+	var ignoreSuffix = []string{
+		"/LICENSE", "/Makefile", "/README.md", "/README", "/id_rsa",
+		".bin", ".exe", ".dll",
+		".zip", ".gz", ".tar", ".db",
+		".json", ".conf",
+	}
+	for _, s := range ignoreSuffix {
+		if strings.HasSuffix(cleanedPath, s) {
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+	}
+
 	requestFilePath := strings.Replace(cleanedPath, "/"+pathes[0], "", 1)
 	if len(pathes) == 1 {
 		requestFilePath = "index.html"
 	}
 
 	fullpath := filepath.Clean(filepath.Join(getRepositoryDirectoryPath(pathes[0]), requestFilePath))
-	if strings.Contains(fullpath, "/.") || !strings.HasPrefix(fullpath, getRepositoriesDir()) {
+	if strings.Contains(fullpath, "/.") ||
+		!strings.HasPrefix(fullpath, getRepositoriesDir()) ||
+		strings.Replace(fullpath, getRepositoriesDir(), "", 1) == "" {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if s, err := os.Stat(fullpath); err != nil || s.IsDir() {
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -127,12 +157,43 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(res, f); err != nil {
 		log.Println(err)
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	res.Header().Add("Content-Type", guessContentType(fullpath))
+	res.WriteHeader(http.StatusOK)
+}
+
+func guessContentType(path string) string {
+	// useful one https://github.com/nginx/nginx/blob/master/conf/mime.types
+	switch filepath.Ext(path) {
+	case "html", "htm":
+		return "text/html"
+	case "css":
+		return "text/css"
+	case "js":
+		return "application/javascript"
+	case "gif":
+		return "image/gif"
+	case "jpeg", "jpg":
+		return "image/jpeg"
+	case "png":
+		return "image/png"
+	case "svg", "svgz":
+		return "image/svg+xml"
+	case "webp":
+		return "image/webp"
+	case "ico":
+		return "image/x-icon"
+	case "woff":
+		return "font/woff"
+	case "woff2":
+		return "font/woff2"
+	}
+	return "text/plain"
 }
 
 const (
