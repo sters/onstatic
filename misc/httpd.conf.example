@@ -1,0 +1,33 @@
+# Example directory structure
+#
+# /var/www/onstatic/
+# |-- repositories
+# |   |-- {hashed repo directory}
+# |   `-- {hashed repo directory}
+# `-- run
+#     `-- onstatic // onstatic binary
+#
+
+Listen 8080
+
+<VirtualHost *:8080>
+    ServerName localhost
+    DocumentRoot /var/www/onstatic/run
+
+    ErrorLog /var/log/httpd/onstatic.error_log
+    CustomLog /var/log/httpd/onstatic.access_log common
+
+    <Directory "/var/www/onstatic/run">
+        Options ExecCGI FollowSymLinks
+        AllowOverride All
+        Require all granted
+        SetHandler cgi-script
+
+        SetEnv ONSTATIC_CGI_MODE true
+        SetEnv ONSTATIC_REPOSITORIES_DIRECTORY ../repositories/
+        SetEnv ONSTATIC_SALT xxx
+        SetEnv ONSTATIC_HTTP_HEADER_KEY xxx
+    </Directory>
+
+    ScriptAliasMatch /.* /var/www/onstatic/run/onstatic
+</VirtualHost>
