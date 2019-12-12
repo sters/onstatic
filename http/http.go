@@ -3,6 +3,8 @@ package http
 import (
 	"net"
 	"net/http"
+
+	"github.com/morikuni/failure"
 )
 
 // Server for http
@@ -17,12 +19,12 @@ type Server struct {
 func (s *Server) Run() error {
 	ln, err := net.Listen("tcp", "127.0.0.1:"+s.port)
 	if err != nil {
-		return err
+		return failure.Wrap(err)
 	}
 	s.ln = ln
 
 	if err := s.http.Serve(s.ln); err != nil && err != http.ErrServerClosed {
-		return err
+		return failure.Wrap(err)
 	}
 
 	return nil

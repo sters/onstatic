@@ -7,15 +7,26 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/morikuni/failure"
 	"github.com/sters/onstatic/conf"
-	"github.com/sters/onstatic/ssh"
+	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing/cache"
-	gitssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	"gopkg.in/src-d/go-git.v4/storage/filesystem"
 )
+
+const originName = "origin"
+
+var fsNew = func(dirpath string) billy.Filesystem {
+	return osfs.New(dirpath)
+}
+
+func repoToFs(r *git.Repository) billy.Filesystem {
+	return r.Storer.(*filesystem.Storage).Filesystem()
+}
 
 func repoToDir(r *git.Repository) string {
 	return r.Storer.(*filesystem.Storage).Filesystem().Root()
@@ -46,10 +57,11 @@ func getSSHPubKeyRelatedPath() string {
 func cleanRepo(repo *git.Repository) error {
 	w, err := repo.Worktree()
 	if err != nil {
-		return err
+		return failure.Wrap(err)
 	}
 
-	return os.RemoveAll(w.Filesystem.Root())
+	_, err = w.Remove("/")
+	return failure.Wrap(err)
 }
 
 func getHashedDirectoryName(n string) string {
@@ -65,43 +77,62 @@ func getRepositoryDirectoryPath(reponame string) string {
 
 func createLocalRepositroy(reponame string) (*git.Repository, error) {
 	dir := getRepositoryDirectoryPath(reponame)
-	if err := os.Mkdir(dir, 0755); err != nil {
-		return nil, err
+	fs := fsNew(dir)
+	if err := fs.MkdirAll("/", 0755); err != nil {
+		return nil, failure.Wrap(err)
 	}
 
-	return git.Init(
+	gitdir, err := fs.Chroot(".git")
+	if err != nil {
+		return nil, failure.Wrap(err)
+	}
+
+	r, err := git.Init(
 		filesystem.NewStorage(
-			osfs.New(filepath.Join(dir, ".git")),
+			gitdir,
 			cache.NewObjectLRUDefault(),
 		),
-		osfs.New(dir),
+		fs,
 	)
+	if err != nil {
+		return nil, failure.Wrap(err)
+	}
+	return r, nil
 }
 
 func loadLocalRepository(reponame string) (*git.Repository, error) {
 	dir := getRepositoryDirectoryPath(reponame)
-	return git.Open(
+	fs := fsNew(dir)
+	gitdir, err := fs.Chroot(".git")
+	if err != nil {
+		return nil, failure.Wrap(err)
+	}
+
+	r, err := git.Open(
 		filesystem.NewStorage(
-			osfs.New(filepath.Join(dir, ".git")),
+			gitdir,
 			cache.NewObjectLRUDefault(),
 		),
-		osfs.New(dir),
+		fs,
 	)
+	if err != nil {
+		return nil, failure.Wrap(err)
+	}
+	return r, nil
 }
 
 func generateNewDeploySSHKey(repo *git.Repository) error {
-	key, err := ssh.GenerateKey(
+	k, err := generateKey(
 		conf.Variables.SSHKeySize,
 		conf.Variables.SSHKeyFilename,
 		conf.Variables.SSHPubKeyFilename,
 	)
 	if err != nil {
-		return err
+		return failure.Wrap(err)
 	}
 
-	dir := filepath.Join(repoToDir(repo), conf.Variables.KeyDirectoryRelatedFromRepository)
-	if err := key.Save(dir); err != nil {
-		return err
+	if err := k.save(repoToFs(repo), conf.Variables.KeyDirectoryRelatedFromRepository); err != nil {
+		return failure.Wrap(err)
 	}
 
 	return nil
@@ -110,7 +141,7 @@ func generateNewDeploySSHKey(repo *git.Repository) error {
 func configureSSHKey(repo *git.Repository) error {
 	cfg, err := repo.Config()
 	if err != nil {
-		return err
+		return failure.Wrap(err)
 	}
 
 	cfg.Raw.Section("core").AddOption(
@@ -120,49 +151,62 @@ func configureSSHKey(repo *git.Repository) error {
 			getSSHKeyRelatedPath(),
 		),
 	)
+	repo.Storer.SetConfig(cfg)
 
 	return nil
 }
 
 func getSSHPublicKeyContent(repo *git.Repository) ([]byte, error) {
-	s := filepath.Clean(filepath.Join(
-		repoToDir(repo),
-		conf.Variables.KeyDirectoryRelatedFromRepository,
-		conf.Variables.SSHPubKeyFilename,
-	))
+	fs, err := repoToFs(repo).Chroot(conf.Variables.KeyDirectoryRelatedFromRepository)
+	if err != nil {
+		return nil, failure.Wrap(err, failure.Message("failed to chroot"))
+	}
 
-	return ioutil.ReadFile(s)
+	f, err := fs.Open(conf.Variables.SSHPubKeyFilename)
+	if err != nil {
+		return nil, failure.Wrap(err, failure.Message("failed to open"))
+	}
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, failure.Wrap(err, failure.Message("failed to readall"))
+	}
+	return b, nil
 }
 
 func configureOriginRepository(repo *git.Repository, originURL string) error {
 	_, err := repo.CreateRemote(&config.RemoteConfig{
-		Name: "origin",
+		Name: originName,
 		URLs: []string{originURL},
 	})
 	if err != nil {
-		return err
+		return failure.Wrap(err)
 	}
-
 	return nil
 }
 
 func doGitPull(repo *git.Repository) error {
 	w, err := repo.Worktree()
 	if err != nil {
-		return err
+		return failure.Wrap(err)
 	}
 
-	auth, err := gitssh.NewPublicKeysFromFile(
+	auth, err := ssh.NewPublicKeysFromFile(
 		"git",
 		filepath.Join(repoToDir(repo), getSSHKeyRelatedPath()),
-		"",
+		"", // TODO: passphrease
 	)
 	if err != nil {
-		return err
+		return failure.Wrap(err)
 	}
 
-	return w.Pull(&git.PullOptions{
-		RemoteName: "origin",
+	err = w.Pull(&git.PullOptions{
+		RemoteName: originName,
 		Auth:       auth,
 	})
+	if err != nil {
+		return failure.Wrap(err)
+	}
+	return nil
 }

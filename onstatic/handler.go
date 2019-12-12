@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -104,22 +103,56 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 	}
 
 	cleanedPath := path.Clean(req.URL.Path)
+	if cleanedPath[0] == '/' {
+		cleanedPath = cleanedPath[1:]
+	}
+
 	pathes := strings.Split(cleanedPath, "/")
-	if len(pathes) == 0 {
+	if len(pathes) <= 1 {
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
 
+	if hasIgnoreContents(cleanedPath) || hasIgnoreSuffix(cleanedPath) {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	requestFilePath := strings.Replace(cleanedPath, pathes[0], "", 1)
+	fs := fsNew(getRepositoryDirectoryPath(pathes[0]))
+	if s, err := fs.Stat(requestFilePath); err != nil || s.IsDir() {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	f, err := fs.Open(requestFilePath)
+	if err != nil {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+	defer f.Close()
+
+	res.Header().Set("Content-Type", guessContentType(requestFilePath))
+	res.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(res, f); err != nil {
+		log.Println(err)
+		return
+	}
+}
+
+func hasIgnoreContents(p string) bool {
 	var ignoreContains = []string{
 		"/.", "/internal", "/bin/",
 	}
 	for _, c := range ignoreContains {
-		if strings.Contains(cleanedPath, c) {
-			res.WriteHeader(http.StatusNotFound)
-			return
+		if strings.Contains(p, c) {
+			return true
 		}
 	}
+	return false
+}
 
+func hasIgnoreSuffix(p string) bool {
 	var ignoreSuffix = []string{
 		"/LICENSE", "/Makefile", "/README.md", "/README", "/id_rsa",
 		".bin", ".exe", ".dll",
@@ -127,44 +160,12 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		".json", ".conf",
 	}
 	for _, s := range ignoreSuffix {
-		if strings.HasSuffix(cleanedPath, s) {
-			res.WriteHeader(http.StatusNotFound)
-			return
+		if strings.HasSuffix(p, s) {
+			return true
 		}
 	}
 
-	requestFilePath := strings.Replace(cleanedPath, "/"+pathes[0], "", 1)
-	if len(pathes) == 1 {
-		requestFilePath = "index.html"
-	}
-
-	fullpath := filepath.Clean(filepath.Join(getRepositoryDirectoryPath(pathes[0]), requestFilePath))
-	if strings.Contains(fullpath, "/.") ||
-		!strings.HasPrefix(fullpath, getRepositoriesDir()) ||
-		strings.Replace(fullpath, getRepositoriesDir(), "", 1) == "" {
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if s, err := os.Stat(fullpath); err != nil || s.IsDir() {
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	f, err := os.Open(fullpath)
-	if err != nil {
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if _, err := io.Copy(res, f); err != nil {
-		log.Println(err)
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	res.Header().Add("Content-Type", guessContentType(fullpath))
-	res.WriteHeader(http.StatusOK)
+	return false
 }
 
 func guessContentType(path string) string {
