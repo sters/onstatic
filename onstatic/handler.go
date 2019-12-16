@@ -1,18 +1,19 @@
 package onstatic
 
 import (
-	"io"
 	"log"
 	"net/http"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/sters/onstatic/conf"
 )
 
+var fileserver http.Handler
+
 // RegisterHandler define http request handler
 func RegisterHandler(s *http.ServeMux) {
+	fileserver = http.FileServer(http.Dir(getRepositoriesDir()))
+
 	s.HandleFunc("/register", handleRegister)
 	s.HandleFunc("/pull", handlePull)
 	s.HandleFunc("/", handleAll)
@@ -102,42 +103,18 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cleanedPath := path.Clean(req.URL.Path)
-	if cleanedPath[0] == '/' {
-		cleanedPath = cleanedPath[1:]
-	}
-
-	pathes := strings.Split(cleanedPath, "/")
-	if len(pathes) <= 1 {
+	pathes := strings.Split(req.URL.Path, "/")
+	if len(pathes) <= 2 {
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	if hasIgnoreContents(cleanedPath) || hasIgnoreSuffix(cleanedPath) {
+	if hasIgnoreContents(req.URL.Path) || hasIgnoreSuffix(req.URL.Path) {
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	requestFilePath := strings.Replace(cleanedPath, pathes[0], "", 1)
-	fs := fsNew(getRepositoryDirectoryPath(pathes[0]))
-	if s, err := fs.Stat(requestFilePath); err != nil || s.IsDir() {
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	f, err := fs.Open(requestFilePath)
-	if err != nil {
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-	defer f.Close()
-
-	res.Header().Set("Content-Type", guessContentType(requestFilePath))
-	res.WriteHeader(http.StatusOK)
-	if _, err := io.Copy(res, f); err != nil {
-		log.Println(err)
-		return
-	}
+	fileserver.ServeHTTP(res, req)
 }
 
 func hasIgnoreContents(p string) bool {
@@ -166,35 +143,6 @@ func hasIgnoreSuffix(p string) bool {
 	}
 
 	return false
-}
-
-func guessContentType(path string) string {
-	// useful one https://github.com/nginx/nginx/blob/master/conf/mime.types
-	switch filepath.Ext(path) {
-	case ".html", ".htm":
-		return "text/html"
-	case ".css":
-		return "text/css"
-	case ".js":
-		return "application/javascript"
-	case ".gif":
-		return "image/gif"
-	case ".jpeg", ".jpg":
-		return "image/jpeg"
-	case ".png":
-		return "image/png"
-	case ".svg", ".svgz":
-		return "image/svg+xml"
-	case ".webp":
-		return "image/webp"
-	case ".ico":
-		return "image/x-icon"
-	case ".woff":
-		return "font/woff"
-	case ".woff2":
-		return "font/woff2"
-	}
-	return "text/plain"
 }
 
 const (

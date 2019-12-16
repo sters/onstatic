@@ -2,6 +2,7 @@ package onstatic
 
 import (
 	"bytes"
+	"io"
 	"log"
 	"net/http"
 	"net/textproto"
@@ -29,6 +30,31 @@ func (f *fakeResponse) Write(b []byte) (int, error) {
 }
 func (f *fakeResponse) WriteHeader(c int) {
 	f.status = c
+}
+
+type fakeFileserver struct{}
+
+func (fake *fakeFileserver) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	pathes := strings.Split(req.URL.Path, "/")
+	requestFilePath := strings.Replace(req.URL.Path, "/"+pathes[1], "", 1)
+	fs := fsNew(getRepositoryDirectoryPath(pathes[1]))
+	if s, err := fs.Stat(requestFilePath); err != nil || s.IsDir() {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	f, err := fs.Open(requestFilePath)
+	if err != nil {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+	defer f.Close()
+
+	res.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(res, f); err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 func Test_handleRegister(t *testing.T) {
@@ -221,6 +247,7 @@ func Test_handlePull(t *testing.T) {
 
 func Test_handleAll(t *testing.T) {
 	conf.Init()
+	fileserver = &fakeFileserver{}
 
 	// shared memfs
 	fs := map[string]billy.Filesystem{}
@@ -264,13 +291,11 @@ func Test_handleAll(t *testing.T) {
 		req                *http.Request
 		wantResponseStatus int
 		wantResponseBody   string
-		wantContentType    string
 	}{
 		{
 			"root not found",
 			generateReq("/"),
 			http.StatusNotFound,
-			"",
 			"",
 		},
 		{
@@ -278,13 +303,11 @@ func Test_handleAll(t *testing.T) {
 			generateReq("/foo/foo.txt"),
 			http.StatusNotFound,
 			"",
-			"",
 		},
 		{
 			"repo root not found",
 			generateReq("/" + getHashedDirectoryName(reponame) + "/"),
 			http.StatusNotFound,
-			"",
 			"",
 		},
 		{
@@ -292,13 +315,11 @@ func Test_handleAll(t *testing.T) {
 			generateReq("/" + getHashedDirectoryName(reponame) + "/../../foo.txt"),
 			http.StatusNotFound,
 			"",
-			"",
 		},
 		{
 			"file found but cant see it",
 			generateReq("/" + getHashedDirectoryName(reponame) + "/foo.bin"),
 			http.StatusNotFound,
-			"",
 			"",
 		},
 		{
@@ -306,14 +327,12 @@ func Test_handleAll(t *testing.T) {
 			generateReq("/" + getHashedDirectoryName(reponame) + "/foo.txt"),
 			http.StatusOK,
 			"Hello world",
-			"text/plain",
 		},
 		{
 			"file found with html",
 			generateReq("/" + getHashedDirectoryName(reponame) + "/bar.html"),
 			http.StatusOK,
 			"it needs text/html",
-			"text/html",
 		},
 	}
 	for _, test := range tests {
@@ -336,10 +355,6 @@ func Test_handleAll(t *testing.T) {
 
 			if test.wantResponseStatus != res.status {
 				t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-			}
-
-			if got := res.Header().Get("Content-Type"); test.wantContentType != got {
-				t.Fatalf("want = %s, got = %s", test.wantContentType, got)
 			}
 
 			if test.wantResponseBody != string(res.body) {
