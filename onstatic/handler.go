@@ -92,7 +92,7 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 
 	log.Print("pull success: ", reponame)
 	res.WriteHeader(http.StatusOK)
-	res.Write([]byte("ok"))
+	res.Write([]byte(reponame))
 	return
 }
 
