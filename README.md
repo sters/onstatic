@@ -1,5 +1,7 @@
 # onstatic
 
+![](https://github.com/sters/onstatic/workflows/Go/badge.svg)
+
 onstatic is static page hosting controller.
 
 ## Quick Start
@@ -25,5 +27,5 @@ You can get hashed repository name. Try access `localhost:18888/{Hashed Reposito
 
 ## Other Informations
 
-See [conf/conf.go](conf/conf.go), [onstatic/handler.go](onstatic/handler.go).
+See [conf/conf.go](conf/conf.go), [onstatic/handler.go](onstatic/handler.go). You can do it.
 
