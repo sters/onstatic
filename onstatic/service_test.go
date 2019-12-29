@@ -105,7 +105,7 @@ func Test_roughFunctional(t *testing.T) {
 	}
 
 	t.Log("cleanRepo")
-	if err := cleanRepo(repo); err != nil {
+	if err := removeRepo(repo); err != nil {
 		t.Fatal(err)
 	}
 }

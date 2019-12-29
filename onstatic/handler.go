@@ -16,6 +16,7 @@ func RegisterHandler(s *http.ServeMux) {
 
 	s.HandleFunc("/register", handleRegister)
 	s.HandleFunc("/pull", handlePull)
+	s.HandleFunc("/unregister", handleUnregister)
 	s.HandleFunc("/", handleAll)
 }
 
@@ -36,19 +37,19 @@ func handleRegister(res http.ResponseWriter, req *http.Request) {
 	}
 	if err := generateNewDeploySSHKey(repo); err != nil {
 		log.Print("failed to create sshkey: ", err)
-		_ = cleanRepo(repo)
+		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 	if err := configureSSHKey(repo); err != nil {
 		log.Print("failed to create configure sshkey: ", err)
-		_ = cleanRepo(repo)
+		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 	if err := configureOriginRepository(repo, reponame); err != nil {
 		log.Print("failed to create configure origin: ", err)
-		_ = cleanRepo(repo)
+		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -56,7 +57,7 @@ func handleRegister(res http.ResponseWriter, req *http.Request) {
 	b, err := getSSHPublicKeyContent(repo)
 	if err != nil {
 		log.Print("failed to get public key: ", err)
-		_ = cleanRepo(repo)
+		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -93,6 +94,35 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 	log.Print("pull success: ", reponame)
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(reponame))
+	return
+}
+
+func handleUnregister(res http.ResponseWriter, req *http.Request) {
+	if !validate(res, req) {
+		log.Print("failed to validate: ", req.Header)
+		res.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	reponame := strings.TrimSpace(req.Header.Get(repoKey))
+	dirname := getHashedDirectoryName(reponame)
+
+	repo, err := loadLocalRepository(dirname)
+	if err != nil {
+		log.Print("failed to create localrepo: ", err)
+		res.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	if err := removeRepo(repo); err != nil {
+		log.Print("failed to clean repo: ", err)
+		res.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	log.Print("unregister success: ", reponame)
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte("ok"))
 	return
 }
 

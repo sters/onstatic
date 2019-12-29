@@ -11,6 +11,7 @@ import (
 	"github.com/sters/onstatic/conf"
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/osfs"
+	"gopkg.in/src-d/go-billy.v4/util"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing/cache"
@@ -54,14 +55,13 @@ func getSSHPubKeyRelatedPath() string {
 	))
 }
 
-func cleanRepo(repo *git.Repository) error {
+func removeRepo(repo *git.Repository) error {
 	w, err := repo.Worktree()
 	if err != nil {
 		return failure.Wrap(err)
 	}
 
-	_, err = w.Remove("/")
-	return failure.Wrap(err)
+	return failure.Wrap(util.RemoveAll(w.Filesystem, "/"))
 }
 
 func getHashedDirectoryName(n string) string {

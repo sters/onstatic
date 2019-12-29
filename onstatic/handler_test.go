@@ -142,6 +142,102 @@ func Test_handleRegister(t *testing.T) {
 	}
 }
 
+func Test_handleUnregister(t *testing.T) {
+	conf.Init()
+
+	// shared memfs
+	fs := map[string]billy.Filesystem{}
+	fsNew = func(dirpath string) billy.Filesystem {
+		if f, ok := fs[dirpath]; ok {
+			return f
+		}
+		fs[dirpath] = memfs.New()
+		return fs[dirpath]
+	}
+
+	reponame := "git@github.com:sters/onstatic.git"
+
+	// setup
+	createLocalRepositroy(getHashedDirectoryName(reponame))
+
+	tests := []struct {
+		name                string
+		req                 *http.Request
+		wantResponseHeaders map[string]string
+		wantResponseStatus  int
+		wantLogContents     string
+	}{
+		{
+			"failed to validate",
+			&http.Request{
+				Header: http.Header{},
+				Method: "GET",
+			},
+			nil,
+			http.StatusServiceUnavailable,
+			"failed to validate",
+		},
+		{
+			"success",
+			&http.Request{
+				Header: http.Header{
+					textproto.CanonicalMIMEHeaderKey(validateKey): []string{conf.Variables.HTTPHeaderKey},
+					textproto.CanonicalMIMEHeaderKey(repoKey):     []string{reponame},
+				},
+				Method: "POST",
+			},
+			nil,
+			http.StatusOK,
+			"unregister success",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// fake std logger
+			logbuf := bytes.NewBuffer([]byte{})
+			log.SetOutput(logbuf)
+			defer func() {
+				if logbuf.Len() != 0 {
+					t.Logf("%s", logbuf)
+				}
+
+				if !strings.Contains(logbuf.String(), test.wantLogContents) {
+					t.Fatalf("want in logs: %s", test.wantLogContents)
+				}
+			}()
+
+			res := &fakeResponse{
+				header: http.Header{},
+				body:   []byte{},
+			}
+
+			handleUnregister(res, test.req)
+
+			if test.wantResponseStatus != res.status {
+				t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
+			}
+
+			for k, v := range test.wantResponseHeaders {
+				if res.Header().Get(k) != v {
+					t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
+				}
+				res.Header().Del(k)
+			}
+			if 0 != len(res.Header()) {
+				t.Fatalf("want = no more header, got = %+v", res.Header())
+			}
+
+			if res.status == http.StatusOK {
+				// check repo removed
+				_, e := loadLocalRepository(getHashedDirectoryName(reponame))
+				if e == nil {
+					t.Fatalf("want = repo can't load, got loaded")
+				}
+			}
+		})
+	}
+}
+
 func Test_handlePull(t *testing.T) {
 	conf.Init()
 
