@@ -138,6 +138,10 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNotFound)
 		return
 	}
+	if strings.TrimSpace(pathes[len(pathes)-1]) == "" {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	if hasIgnoreContents(req.URL.Path) || hasIgnoreSuffix(req.URL.Path) {
 		res.WriteHeader(http.StatusNotFound)
