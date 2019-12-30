@@ -34,7 +34,7 @@ func main() {
 }
 
 func runHTTPServerMode(ctx context.Context, server *http.Server) {
-	log.Print("http server starting")
+	log.Printf("http server starting, port = %s", conf.Variables.HTTPPort)
 	go func() { _ = server.Run() }()
 
 	sigCh := make(chan os.Signal, 1)
