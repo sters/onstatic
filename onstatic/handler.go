@@ -1,11 +1,11 @@
 package onstatic
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/sters/onstatic/conf"
+	"go.uber.org/zap"
 )
 
 var fileserver http.Handler
@@ -22,7 +22,7 @@ func RegisterHandler(s *http.ServeMux) {
 
 func handleRegister(res http.ResponseWriter, req *http.Request) {
 	if !validate(res, req) {
-		log.Print("failed to validate: ", req.Header)
+		zap.L().Error("failed to validate", zap.Any("reqHeader", req.Header))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -31,24 +31,24 @@ func handleRegister(res http.ResponseWriter, req *http.Request) {
 	dirname := getHashedDirectoryName(reponame)
 	repo, err := createLocalRepositroy(dirname)
 	if err != nil {
-		log.Print("failed to create localrepo: ", err)
+		zap.L().Error("failed to create localrepo", zap.Error(err))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 	if err := generateNewDeploySSHKey(repo); err != nil {
-		log.Print("failed to create sshkey: ", err)
+		zap.L().Error("failed to create sshkey", zap.Error(err))
 		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 	if err := configureSSHKey(repo); err != nil {
-		log.Print("failed to create configure sshkey: ", err)
+		zap.L().Error("failed to create configure sshkey", zap.Error(err))
 		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 	if err := configureOriginRepository(repo, reponame); err != nil {
-		log.Print("failed to create configure origin: ", err)
+		zap.L().Error("failed to create configure origin", zap.Error(err))
 		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -56,13 +56,13 @@ func handleRegister(res http.ResponseWriter, req *http.Request) {
 
 	b, err := getSSHPublicKeyContent(repo)
 	if err != nil {
-		log.Print("failed to get public key: ", err)
+		zap.L().Error("failed to get public key", zap.Error(err))
 		_ = removeRepo(repo)
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
-	log.Print("register success: ", reponame)
+	zap.L().Info("register success", zap.String("reponame", reponame))
 	res.WriteHeader(http.StatusOK)
 	res.Write(b)
 	return
@@ -70,7 +70,7 @@ func handleRegister(res http.ResponseWriter, req *http.Request) {
 
 func handlePull(res http.ResponseWriter, req *http.Request) {
 	if !validate(res, req) {
-		log.Print("failed to validate: ", req.Header)
+		zap.L().Error("failed to validate", zap.Any("reqHeader", req.Header))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -80,18 +80,18 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 	)
 	repo, err := loadLocalRepository(reponame)
 	if err != nil {
-		log.Print("failed to load repo: ", err)
+		zap.L().Error("failed to load repo", zap.Error(err))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
 	if err := doGitPull(repo); err != nil {
-		log.Print("failed to gitpull: ", err)
+		zap.L().Error("failed to gitpull", zap.Error(err))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
-	log.Print("pull success: ", reponame)
+	zap.L().Info("pull success", zap.String("reponame", reponame))
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte(reponame))
 	return
@@ -99,7 +99,7 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 
 func handleUnregister(res http.ResponseWriter, req *http.Request) {
 	if !validate(res, req) {
-		log.Print("failed to validate: ", req.Header)
+		zap.L().Error("failed to validate", zap.Any("reqHeader", req.Header))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -109,18 +109,18 @@ func handleUnregister(res http.ResponseWriter, req *http.Request) {
 
 	repo, err := loadLocalRepository(dirname)
 	if err != nil {
-		log.Print("failed to create localrepo: ", err)
+		zap.L().Error("failed to create localrepo", zap.Error(err))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
 	if err := removeRepo(repo); err != nil {
-		log.Print("failed to clean repo: ", err)
+		zap.L().Error("failed to clean repo", zap.Error(err))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
-	log.Print("unregister success: ", reponame)
+	zap.L().Info("unregister success", zap.String("reponame", reponame))
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte("ok"))
 	return

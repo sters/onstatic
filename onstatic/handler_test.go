@@ -1,7 +1,6 @@
 package onstatic
 
 import (
-	"bytes"
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/sters/onstatic/conf"
+	"github.com/sters/onstatic/testutil"
+	"go.uber.org/zap/zapcore"
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/memfs"
 )
@@ -105,15 +106,9 @@ func Test_handleRegister(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// fake std logger
-			logbuf := bytes.NewBuffer([]byte{})
-			log.SetOutput(logbuf)
+			logbuf, _ := testutil.NewLogObserver(t, zapcore.DebugLevel)
 			defer func() {
-				if logbuf.Len() != 0 {
-					t.Logf("%s", logbuf)
-				}
-
-				if !strings.Contains(logbuf.String(), test.wantLogContents) {
+				if logbuf.FilterMessage(test.wantLogContents).Len() == 0 {
 					t.Fatalf("want in logs: %s", test.wantLogContents)
 				}
 			}()
@@ -193,15 +188,9 @@ func Test_handleUnregister(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// fake std logger
-			logbuf := bytes.NewBuffer([]byte{})
-			log.SetOutput(logbuf)
+			logbuf, _ := testutil.NewLogObserver(t, zapcore.DebugLevel)
 			defer func() {
-				if logbuf.Len() != 0 {
-					t.Logf("%s", logbuf)
-				}
-
-				if !strings.Contains(logbuf.String(), test.wantLogContents) {
+				if logbuf.FilterMessage(test.wantLogContents).Len() == 0 {
 					t.Fatalf("want in logs: %s", test.wantLogContents)
 				}
 			}()
@@ -245,10 +234,8 @@ func Test_handlePull(t *testing.T) {
 	fs := map[string]billy.Filesystem{}
 	fsNew = func(dirpath string) billy.Filesystem {
 		if f, ok := fs[dirpath]; ok {
-			log.Println("exist: " + dirpath)
 			return f
 		}
-		log.Println("not found: " + dirpath)
 		fs[dirpath] = memfs.New()
 		return fs[dirpath]
 	}
@@ -286,7 +273,7 @@ func Test_handlePull(t *testing.T) {
 			},
 			nil,
 			http.StatusServiceUnavailable,
-			"repository does not exist",
+			"failed to load repo",
 		},
 		{
 			"failed pull",
@@ -299,20 +286,14 @@ func Test_handlePull(t *testing.T) {
 			},
 			nil,
 			http.StatusServiceUnavailable,
-			"open /.git/id_rsa: no such file or directory",
+			"failed to gitpull",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// fake std logger
-			logbuf := bytes.NewBuffer([]byte{})
-			log.SetOutput(logbuf)
+			logbuf, _ := testutil.NewLogObserver(t, zapcore.DebugLevel)
 			defer func() {
-				if logbuf.Len() != 0 {
-					t.Logf("%s", logbuf)
-				}
-
-				if !strings.Contains(logbuf.String(), test.wantLogContents) {
+				if logbuf.FilterMessage(test.wantLogContents).Len() == 0 {
 					t.Fatalf("want in logs: %s", test.wantLogContents)
 				}
 			}()
@@ -433,15 +414,6 @@ func Test_handleAll(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// fake std logger
-			logbuf := bytes.NewBuffer([]byte{})
-			log.SetOutput(logbuf)
-			defer func() {
-				if logbuf.Len() != 0 {
-					t.Logf("%s", logbuf)
-				}
-			}()
-
 			res := &fakeResponse{
 				header: http.Header{},
 				body:   []byte{},

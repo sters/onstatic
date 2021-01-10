@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http/cgi"
 	"os"
 	"os/signal"
@@ -11,6 +10,7 @@ import (
 	"github.com/sters/onstatic/conf"
 	"github.com/sters/onstatic/http"
 	"github.com/sters/onstatic/onstatic"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 
 	server, err := http.NewServer(conf.Variables.HTTPPort)
 	if err != nil {
-		log.Fatal(err)
+		zap.L().Fatal("failed to start server", zap.Error(err))
 	}
 	onstatic.RegisterHandler(server.Mux)
 
@@ -34,7 +34,7 @@ func main() {
 }
 
 func runHTTPServerMode(ctx context.Context, server *http.Server) {
-	log.Printf("http server starting, port = %s", conf.Variables.HTTPPort)
+	zap.L().Info("http server starting", zap.String("HTTPPort", conf.Variables.HTTPPort))
 	go func() { _ = server.Run() }()
 
 	sigCh := make(chan os.Signal, 1)
@@ -48,8 +48,8 @@ func runHTTPServerMode(ctx context.Context, server *http.Server) {
 }
 
 func runCGIServerMode(ctx context.Context, server *http.Server) {
-	if e := cgi.Serve(server.Mux); e != nil {
-		log.Print(e)
+	if err := cgi.Serve(server.Mux); err != nil {
+		zap.L().Fatal("failed to cgi.Serve", zap.Error(err))
 	}
 
 	server.Close()
