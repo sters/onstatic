@@ -1,0 +1,18 @@
+# Example of systemd config.
+
+[Unit]
+Description = onstatic
+
+[Service]
+User = root
+Type = simple
+ExecStart = /var/www/onstatic/.run/onstatic
+WorkingDirectory = /var/www/onstatic/.run/
+Restart = always
+Environment = "ONSTATIC_HTTP_PORT=18888"
+Environment = "ONSTATIC_SALT=xxx"
+Environment = "ONSTATIC_HTTP_HEADER_KEY=xxx"
+Environment = "ONSTATIC_REPOSITORIES_DIRECTORY=../"
+
+[Install]
+WantedBy = multi-user.target

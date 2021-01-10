@@ -1,4 +1,6 @@
-# Example directory structure
+# Example of apache2 config.
+#
+# Aimed directory structure
 #
 # /var/www/onstatic/
 # |-- repositories
@@ -12,12 +14,12 @@ Listen 8080
 
 <VirtualHost *:8080>
     ServerName localhost
-    DocumentRoot /var/www/onstatic/run
+    DocumentRoot /var/www/onstatic/.run
 
     ErrorLog /var/log/httpd/onstatic.error_log
     CustomLog /var/log/httpd/onstatic.access_log common
 
-    <Directory "/var/www/onstatic/run">
+    <Directory "/var/www/onstatic/.run">
         Options ExecCGI FollowSymLinks
         AllowOverride All
         Require all granted
@@ -29,5 +31,5 @@ Listen 8080
         SetEnv ONSTATIC_HTTP_HEADER_KEY xxx
     </Directory>
 
-    ScriptAliasMatch /.* /var/www/onstatic/run/onstatic
+    ScriptAliasMatch /.* /var/www/onstatic/.run/onstatic
 </VirtualHost>

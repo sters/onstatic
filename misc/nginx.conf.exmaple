@@ -1,0 +1,19 @@
+# Example of nginx config
+
+upstream onstatic {
+    server localhost:18888;
+}
+
+server {
+    listen 80;
+    server_name localhost;
+    root /var/www/onstatic/;
+
+    location ~ ^\/.+\/.+ {
+        return 403;
+    }
+
+    location / {
+        proxy_pass http://onstatic;
+    }
+}
