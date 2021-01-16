@@ -1,8 +1,8 @@
 # onstatic
 
-[![go](https://github.com/sters/go-project-boilerplate/workflows/Go/badge.svg)](https://github.com/sters/go-project-boilerplate/actions?query=workflow%3AGo)
-[![codecov](https://codecov.io/gh/sters/go-project-boilerplate/branch/main/graph/badge.svg)](https://codecov.io/gh/sters/go-project-boilerplate)
-[![go-report](https://goreportcard.com/badge/github.com/sters/go-project-boilerplate)](https://goreportcard.com/report/github.com/sters/go-project-boilerplate)
+[![go](https://github.com/sters/onstatic/workflows/Go/badge.svg)](https://github.com/sters/onstatic/actions?query=workflow%3AGo)
+[![codecov](https://codecov.io/gh/sters/onstatic/branch/main/graph/badge.svg)](https://codecov.io/gh/sters/onstatic)
+[![go-report](https://goreportcard.com/badge/github.com/sters/onstatic)](https://goreportcard.com/report/github.com/sters/onstatic)
 
 
 onstatic is static page hosting controller.
