@@ -9,6 +9,7 @@ import (
 
 	"github.com/morikuni/failure"
 	"github.com/sters/onstatic/conf"
+	"go.uber.org/zap"
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 	"gopkg.in/src-d/go-billy.v4/util"
@@ -48,12 +49,12 @@ func getSSHKeyRelatedPath() string {
 	))
 }
 
-func getSSHPubKeyRelatedPath() string {
-	return filepath.Clean(filepath.Join(
-		conf.Variables.KeyDirectoryRelatedFromRepository,
-		conf.Variables.SSHPubKeyFilename,
-	))
-}
+// func getSSHPubKeyRelatedPath() string {
+// 	return filepath.Clean(filepath.Join(
+// 		conf.Variables.KeyDirectoryRelatedFromRepository,
+// 		conf.Variables.SSHPubKeyFilename,
+// 	))
+// }
 
 func removeRepo(repo *git.Repository) error {
 	w, err := repo.Worktree()
@@ -66,8 +67,14 @@ func removeRepo(repo *git.Repository) error {
 
 func getHashedDirectoryName(n string) string {
 	s := sha1.New()
-	s.Write([]byte(conf.Variables.Salt))
-	s.Write([]byte(n))
+	if _, err := s.Write([]byte(conf.Variables.Salt)); err != nil {
+		zap.L().Error("failed to create sha1", zap.Error(err))
+		return ""
+	}
+	if _, err := s.Write([]byte(n)); err != nil {
+		zap.L().Error("failed to create sha1", zap.Error(err))
+		return ""
+	}
 	return fmt.Sprintf("%x", s.Sum(nil))
 }
 
@@ -151,7 +158,10 @@ func configureSSHKey(repo *git.Repository) error {
 			getSSHKeyRelatedPath(),
 		),
 	)
-	repo.Storer.SetConfig(cfg)
+
+	if err := repo.Storer.SetConfig(cfg); err != nil {
+		return failure.Wrap(err)
+	}
 
 	return nil
 }

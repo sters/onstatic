@@ -153,7 +153,10 @@ func Test_handleUnregister(t *testing.T) {
 	reponame := "git@github.com:sters/onstatic.git"
 
 	// setup
-	createLocalRepositroy(getHashedDirectoryName(reponame))
+	_, err := createLocalRepositroy(getHashedDirectoryName(reponame))
+	if err != nil {
+		t.Fatalf("failed to create local repository: %+v", err)
+	}
 
 	tests := []struct {
 		name                string
@@ -243,7 +246,10 @@ func Test_handlePull(t *testing.T) {
 	reponame := "git@github.com:sters/onstatic.git"
 
 	// setup
-	createLocalRepositroy(getHashedDirectoryName(reponame))
+	_, err := createLocalRepositroy(getHashedDirectoryName(reponame))
+	if err != nil {
+		t.Fatalf("failed to create local repository: %+v", err)
+	}
 
 	tests := []struct {
 		name                string
@@ -348,8 +354,15 @@ func Test_handleAll(t *testing.T) {
 			"/foo.bin":   "can't see this file",
 		}
 		for name, body := range files {
-			f, _ := fs.Create(name)
-			f.Write([]byte(body))
+			f, err := fs.Create(name)
+			if err != nil {
+				t.Fatalf("failed to create file: %+v", err)
+			}
+
+			if _, err := f.Write([]byte(body)); err != nil {
+				t.Fatalf("failed to write buffer: %+v", err)
+			}
+
 			f.Close()
 		}
 	}

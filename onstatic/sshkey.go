@@ -42,12 +42,14 @@ func (k *key) save(fs billy.Filesystem, dir string) error {
 	return nil
 }
 
-func (k *key) savePrivateKey(fs billy.Filesystem, filename string) error {
+func (k *key) savePrivateKey(fs billy.Filesystem, filename string) (err error) {
 	f, err := fs.Create(filename)
-	defer f.Close()
 	if err != nil {
 		return failure.Wrap(err)
 	}
+	defer func() {
+		err = failure.Wrap(f.Close())
+	}()
 
 	b, err := x509.MarshalPKCS8PrivateKey(k.PrivateKey)
 	if err != nil {
@@ -60,12 +62,14 @@ func (k *key) savePrivateKey(fs billy.Filesystem, filename string) error {
 	})
 }
 
-func (k *key) savePublicKey(fs billy.Filesystem, filename string) error {
+func (k *key) savePublicKey(fs billy.Filesystem, filename string) (err error) {
 	f, err := fs.Create(filename)
-	defer f.Close()
 	if err != nil {
 		return failure.Wrap(err)
 	}
+	defer func() {
+		err = failure.Wrap(f.Close())
+	}()
 
 	pk, err := ssh.NewPublicKey(&k.PublicKey)
 	if err != nil {

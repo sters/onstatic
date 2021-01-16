@@ -46,7 +46,7 @@ func Test_roughFunctional(t *testing.T) {
 		t.Fatal(err)
 	}
 	// after check privatekey and publickey
-	savedpubkey := []byte{}
+	var savedpubkey []byte
 	{
 		fs, err := repoToFs(repo).Chroot(conf.Variables.KeyDirectoryRelatedFromRepository)
 		if err != nil {

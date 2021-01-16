@@ -64,8 +64,9 @@ func handleRegister(res http.ResponseWriter, req *http.Request) {
 
 	zap.L().Info("register success", zap.String("reponame", reponame))
 	res.WriteHeader(http.StatusOK)
-	res.Write(b)
-	return
+	if _, err := res.Write(b); err != nil {
+		zap.L().Error("failed to write stream", zap.Error(err))
+	}
 }
 
 func handlePull(res http.ResponseWriter, req *http.Request) {
@@ -93,8 +94,9 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 
 	zap.L().Info("pull success", zap.String("reponame", reponame))
 	res.WriteHeader(http.StatusOK)
-	res.Write([]byte(reponame))
-	return
+	if _, err := res.Write([]byte(reponame)); err != nil {
+		zap.L().Error("failed to write stream", zap.Error(err))
+	}
 }
 
 func handleUnregister(res http.ResponseWriter, req *http.Request) {
@@ -122,8 +124,9 @@ func handleUnregister(res http.ResponseWriter, req *http.Request) {
 
 	zap.L().Info("unregister success", zap.String("reponame", reponame))
 	res.WriteHeader(http.StatusOK)
-	res.Write([]byte("ok"))
-	return
+	if _, err := res.Write([]byte("ok")); err != nil {
+		zap.L().Error("failed to write stream", zap.Error(err))
+	}
 }
 
 // handleAll onstatic managing contents
