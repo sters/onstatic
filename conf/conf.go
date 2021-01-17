@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -124,4 +125,13 @@ func createLogFileIfEmpty(p string) error {
 	}
 
 	return nil
+}
+
+func getCurrentGoFilePath() string {
+	_, file, _, _ := runtime.Caller(1)
+	p, err := filepath.Abs(file)
+	if err != nil {
+		return ""
+	}
+	return p
 }
