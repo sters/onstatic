@@ -15,6 +15,7 @@ import (
 	"gopkg.in/src-d/go-billy.v4/util"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/cache"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 	"gopkg.in/src-d/go-git.v4/storage/filesystem"
@@ -190,13 +191,14 @@ func configureOriginRepository(repo *git.Repository, originURL string) error {
 		Name: originName,
 		URLs: []string{originURL},
 	})
+
 	if err != nil {
 		return failure.Wrap(err)
 	}
 	return nil
 }
 
-func doGitPull(repo *git.Repository) error {
+func doGitPull(repo *git.Repository, branchName string) error {
 	w, err := repo.Worktree()
 	if err != nil {
 		return failure.Wrap(err)
@@ -211,10 +213,17 @@ func doGitPull(repo *git.Repository) error {
 		return failure.Wrap(err)
 	}
 
-	err = w.Pull(&git.PullOptions{
+	opt := &git.PullOptions{
 		RemoteName: originName,
 		Auth:       auth,
-	})
+		Force:      true,
+	}
+
+	if branchName != "" {
+		opt.ReferenceName = plumbing.NewBranchReferenceName(branchName)
+	}
+
+	err = w.Pull(opt)
 	if err != nil {
 		return failure.Wrap(err)
 	}

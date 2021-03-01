@@ -76,9 +76,10 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	reponame := getHashedDirectoryName(
-		strings.TrimSpace(req.Header.Get(repoKey)),
-	)
+	reponame := strings.TrimSpace(req.Header.Get(repoKey))
+	reponame = getHashedDirectoryName(reponame)
+	branchName := strings.TrimSpace(req.Header.Get(branchKey))
+
 	repo, err := loadLocalRepository(reponame)
 	if err != nil {
 		zap.L().Error("failed to load repo", zap.Error(err))
@@ -86,7 +87,7 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := doGitPull(repo); err != nil {
+	if err := doGitPull(repo, branchName); err != nil {
 		zap.L().Error("failed to gitpull", zap.Error(err))
 		res.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -185,6 +186,7 @@ func hasIgnoreSuffix(p string) bool {
 const (
 	validateKey = "X-ONSTATIC-KEY"
 	repoKey     = "X-ONSTATIC-REPONAME"
+	branchKey   = "X-ONSTATIC-BRANCH-NAME"
 )
 
 func validate(res http.ResponseWriter, req *http.Request) bool {
