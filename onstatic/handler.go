@@ -93,7 +93,7 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	zap.L().Info("pull success", zap.String("reponame", reponame))
+	zap.L().Info("pull success", zap.String("reponame", reponame), zap.String("branchname", branchName))
 	res.WriteHeader(http.StatusOK)
 	if _, err := res.Write([]byte(reponame)); err != nil {
 		zap.L().Error("failed to write stream", zap.Error(err))
