@@ -1,5 +1,6 @@
 builds:
-- env:
+- binary: onstatic
+  env:
     - CGO_ENABLED=0
   goos:
     - linux
@@ -9,3 +10,15 @@ builds:
     - 386
     - amd64
   main: ./cmd/server/main.go
+- binary: plugin
+  env:
+    - CGO_ENABLED=0
+  goos:
+    - darwin
+  goarch:
+    - amd64
+  flags:
+    - -buildmode=plugin
+    - -o
+    - build/example.so
+  main: ./plugins/example/main.go
