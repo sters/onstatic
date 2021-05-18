@@ -152,6 +152,12 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	handler := handlePlugin(req.URL.Path)
+	if handler != nil {
+		handler(res, req)
+		return
+	}
+
 	fileserver.ServeHTTP(res, req)
 }
 
