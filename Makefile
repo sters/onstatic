@@ -33,3 +33,7 @@ cover:
 .PHONY: tidy
 tidy:
 	go mod tidy
+
+.PHONY: build-example-plugin
+build-example-plugin:
+	CGO_ENABLED=1 go build -buildmode=plugin -o plugins/example/example.so plugins/example/main.go

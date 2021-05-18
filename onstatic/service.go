@@ -35,6 +35,10 @@ func repoToDir(r *git.Repository) string {
 	return r.Storer.(*filesystem.Storage).Filesystem().Root()
 }
 
+func getRepoFs(repoName string) billy.Filesystem {
+	return fsNew(filepath.Join(getRepositoriesDir(), repoName))
+}
+
 func getRepositoriesDir() string {
 	d, _ := os.Getwd()
 	return filepath.Clean(filepath.Join(

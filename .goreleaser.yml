@@ -1,10 +1,12 @@
 builds:
-- env:
-    - CGO_ENABLED=0
+- id: binary
+  binary: onstatic
+  env:
+    - CGO_ENABLED=1 # for plugin
   goos:
-    - linux
     - darwin
-    - windows
+    - linux
+    #- windows
   goarch:
     - 386
     - amd64
