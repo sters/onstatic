@@ -1,31 +1,4 @@
 builds:
-- id: binary
-  binary: onstatic
-  env:
-    - CGO_ENABLED=1 # for plugin
-  goos:
-    - darwin
-    - linux
-    #- windows
-  goarch:
-    - 386
-    - amd64
-  main: ./cmd/server/main.go
-
-- id: darwin-amd64
-  binary: onstatic
-  env:
-    - CGO_ENABLED=1
-    - CC=o64-clang
-    - CXX=o64-clang++
-  #ldflags:
-  #  - -s -extldflags "-sectcreate __TEXT __info_plist Info.plist"
-  goos:
-    - darwin
-  goarch:
-    - amd64
-  main: ./cmd/server/main.go
-
 - id: linux-amd64
   binary: onstatic
   env:
@@ -33,22 +6,36 @@ builds:
   ldflags:
     - -extldflags "-static"
   goos:
-    - darwin
+    - linux
   goarch:
     - amd64
   main: ./cmd/server/main.go
 
-- id: windows-amd64
-  binary: onstatic
-  env:
-    - CGO_ENABLED=1
-    - CC=x86_64-w64-mingw32-gcc
-    - CXX=x86_64-w64-mingw32-g++
-  ldflags:
-    - -H=windowsgui
-    - -extldflags "-static"
-  goos:
-    - windows
-  goarch:
-    - amd64
-  main: ./cmd/server/main.go
+# - id: darwin-amd64
+#   binary: onstatic
+#   env:
+#     - CGO_ENABLED=1
+#     - CC=o64-clang
+#     - CXX=o64-clang++
+#   #ldflags:
+#   #  - -s -extldflags "-sectcreate __TEXT __info_plist Info.plist"
+#   goos:
+#     - darwin
+#   goarch:
+#     - amd64
+#   main: ./cmd/server/main.go
+
+# - id: windows-amd64
+#   binary: onstatic
+#   env:
+#     - CGO_ENABLED=1
+#     - CC=x86_64-w64-mingw32-gcc
+#     - CXX=x86_64-w64-mingw32-g++
+#   ldflags:
+#     - -H=windowsgui
+#     - -extldflags "-static"
+#   goos:
+#     - windows
+#   goarch:
+#     - amd64
+#   main: ./cmd/server/main.go

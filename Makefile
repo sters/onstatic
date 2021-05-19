@@ -37,3 +37,12 @@ tidy:
 .PHONY: build-example-plugin
 build-example-plugin:
 	CGO_ENABLED=1 go build -buildmode=plugin -o plugins/example/example.so plugins/example/main.go
+
+.PHONY: release-with-docker
+release-with-docker:
+	docker build -t releaser:latest .
+	docker run --rm --privileged \
+		-v $(PWD):/go/src/github.com/sters/onstatic \
+		-w /go/src/github.com/sters/onstatic \
+		-e GITHUB_TOKEN=$(GITHUB_TOKEN) \
+		releaser:latest goreleaser release --rm-dist

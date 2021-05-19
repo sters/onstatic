@@ -21,9 +21,4 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v1
-      with:
-        version: latest
-        args: release --rm-dist
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make release-with-docker
