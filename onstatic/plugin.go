@@ -177,5 +177,5 @@ func CleanupLoadedPlugins(ctx context.Context) {
 			p.api.Stop(ctx)
 		}
 	}
-	loadedPlugins.plugins = make(map[string]repoPlugins)
+	loadedPlugins.plugins = map[string]repoPlugins{}
 }
