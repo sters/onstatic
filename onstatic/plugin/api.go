@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -11,14 +12,21 @@ const (
 	PluginExportVariableName = "EntryPoint"
 )
 
-type Handler func(res http.ResponseWriter, req *http.Request)
-
+// Endpoint definition that should start "/"
 type Endpoint string
 
-type Handlers map[Endpoint]Handler
+// Handlers is Endpoint-HandlerFunc collection
+type Handlers map[Endpoint]http.HandlerFunc
 
+// API is main structure of this plugin
 type API interface {
-	Register() Handlers
+	// Initialize this API
+	Initialize(context.Context)
+	// Start this API handling
+	Stop(context.Context)
+	// Handlers returns it for this API
+	Handlers() Handlers
 }
 
-type EntryPoint func(*zap.Logger) API
+// EntryPoint is plugin entry point. First, call this function.
+type EntryPoint func(context.Context, *zap.Logger) API

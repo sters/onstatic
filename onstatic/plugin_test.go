@@ -1,6 +1,7 @@
 package onstatic
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -33,14 +34,20 @@ var testAPI1HandlerBar = func(res http.ResponseWriter, req *http.Request) {
 
 type testAPI1 struct{}
 
-func (*testAPI1) Register() oplugin.Handlers {
+func (*testAPI1) Handlers() oplugin.Handlers {
 	return oplugin.Handlers{
 		"/foo": testAPI1HandlerFoo,
 		"/bar": testAPI1HandlerBar,
 	}
 }
+func (*testAPI1) Initialize(context.Context) {}
+func (*testAPI1) Stop(context.Context)       {}
+
+var _ plugin.API = (*testAPI1)(nil)
 
 func Test_handlePlugin(t *testing.T) {
+	ctx := context.Background()
+
 	// prepare
 	fs := map[string]billy.Filesystem{}
 	fsNew = func(dirpath string) billy.Filesystem {
@@ -84,7 +91,7 @@ func Test_handlePlugin(t *testing.T) {
 	}
 
 	loadPlugin = func(repoFs billy.Filesystem, filename string) (oplugin.EntryPoint, error) {
-		return func(l *zap.Logger) oplugin.API {
+		return func(_ context.Context, l *zap.Logger) oplugin.API {
 			return &testAPI1{}
 		}, nil
 	}
@@ -94,7 +101,7 @@ func Test_handlePlugin(t *testing.T) {
 	testAPI1HandlerFoo(want, nil)
 
 	got := &fakeHttpResponseWriter{}
-	f := handlePlugin(fmt.Sprintf("/%s/foo", dirname))
+	f := handlePlugin(ctx, fmt.Sprintf("/%s/foo", dirname))
 	f(got, nil)
 	if want.header != got.header {
 		t.Fatalf("failed to wrong handle function: want = %+v, got = %+v", want, got)

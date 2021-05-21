@@ -31,6 +31,8 @@ func main() {
 	}
 
 	runHTTPServerMode(ctx, server)
+
+	onstatic.CleanupLoadedPlugins(ctx)
 }
 
 func runHTTPServerMode(ctx context.Context, server *http.Server) {
