@@ -1,6 +1,7 @@
 package onstatic
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -27,6 +28,7 @@ type repoPlugins struct {
 type repoPlugin struct {
 	lastModified time.Time
 	handlers     oplugin.Handlers
+	api          oplugin.API
 }
 
 var loadedPlugins = &loadedPluginsStruct{
@@ -34,7 +36,7 @@ var loadedPlugins = &loadedPluginsStruct{
 	plugins: map[string]repoPlugins{},
 }
 
-func handlePlugin(requestPath string) http.HandlerFunc {
+func handlePlugin(ctx context.Context, requestPath string) http.HandlerFunc {
 	pathes := strings.Split(requestPath, "/")
 	if len(pathes) < 2 {
 		return nil
@@ -49,7 +51,7 @@ func handlePlugin(requestPath string) http.HandlerFunc {
 		return nil
 	}
 
-	loadPluginIfPossible(repoName, repoFs, fsInfos)
+	loadPluginIfPossible(ctx, repoName, repoFs, fsInfos)
 
 	loadedPlugins.m.RLock()
 	defer loadedPlugins.m.RUnlock()
@@ -70,7 +72,7 @@ func handlePlugin(requestPath string) http.HandlerFunc {
 	return nil
 }
 
-func loadPluginIfPossible(repoName string, repoFs billy.Filesystem, fsInfos []os.FileInfo) {
+func loadPluginIfPossible(ctx context.Context, repoName string, repoFs billy.Filesystem, fsInfos []os.FileInfo) {
 	for _, fsInfo := range fsInfos {
 		if err := checkLastModTime(fsInfo, repoName); err != nil {
 			zap.L().Warn("failed to load plugin, skip", zap.Error(err))
@@ -85,7 +87,9 @@ func loadPluginIfPossible(repoName string, repoFs billy.Filesystem, fsInfos []os
 			continue
 		}
 
-		handlers := ep(zap.L()).Register()
+		api := ep(ctx, zap.L())
+		api.Initialize(ctx)
+		handlers := api.Handlers()
 
 		loadedPlugins.m.Lock()
 		defer loadedPlugins.m.Unlock()
@@ -99,6 +103,7 @@ func loadPluginIfPossible(repoName string, repoFs billy.Filesystem, fsInfos []os
 		loadedPlugins.plugins[repoName].plugins[pluginName] = repoPlugin{
 			lastModified: fsInfo.ModTime(),
 			handlers:     handlers,
+			api:          api,
 		}
 
 		handlePaths := make([]string, len(handlers))
@@ -161,4 +166,16 @@ func loadPluginActual(repoFs billy.Filesystem, filename string) (oplugin.EntryPo
 	}
 
 	return ep, nil
+}
+
+func CleanupLoadedPlugins(ctx context.Context) {
+	loadedPlugins.m.Lock()
+	defer loadedPlugins.m.Unlock()
+
+	for _, repoPlugins := range loadedPlugins.plugins {
+		for _, p := range repoPlugins.plugins {
+			p.api.Stop(ctx)
+		}
+	}
+	loadedPlugins.plugins = map[string]repoPlugins{}
 }

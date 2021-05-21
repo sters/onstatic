@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,7 +14,11 @@ type greeting struct{}
 
 var _ plugin.API = (*greeting)(nil)
 
-func (g *greeting) Register() plugin.Handlers {
+func (g *greeting) Initialize(context.Context) {}
+
+func (g *greeting) Stop(context.Context) {}
+
+func (g *greeting) Handlers() plugin.Handlers {
 	return plugin.Handlers{
 		"/greeting": func(res http.ResponseWriter, req *http.Request) {
 			_, err := res.Write([]byte("Hello, greeting!"))
@@ -25,6 +30,6 @@ func (g *greeting) Register() plugin.Handlers {
 }
 
 // nolint
-var EntryPoint = plugin.EntryPoint(func(*zap.Logger) plugin.API {
+var EntryPoint = plugin.EntryPoint(func(context.Context, *zap.Logger) plugin.API {
 	return &greeting{}
 })
