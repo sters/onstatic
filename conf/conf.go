@@ -27,6 +27,7 @@ type c struct {
 	RepositoriesDirectory             string
 	KeyDirectoryRelatedFromRepository string
 	HTTPHeaderKey                     string
+	AccessLog                         bool
 	logger                            *zap.Logger
 }
 
@@ -44,6 +45,7 @@ func Init() {
 		RepositoriesDirectory:             getenv("REPOSITORIES_DIRECTORY", "repositories/"),
 		KeyDirectoryRelatedFromRepository: getenv("KEY_DIRECTORY_RELATED_FROM_REPOSITORY", "."),
 		HTTPHeaderKey:                     getenv("HTTP_HEADER_KEY", "onstaticonstaticonstatic"),
+		AccessLog:                         getenvBool("ACCESS_LOG", true),
 		logger: logger(
 			zapcore.InfoLevel,
 			getenv("STDLOG_OUTPUT_PATH", "stdout"), // "/var/log/onstatic/stdout.log"),

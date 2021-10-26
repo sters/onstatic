@@ -14,10 +14,25 @@ var fileserver http.Handler
 func RegisterHandler(s *http.ServeMux) {
 	fileserver = http.FileServer(http.Dir(getRepositoriesDir()))
 
-	s.HandleFunc("/register", handleRegister)
-	s.HandleFunc("/pull", handlePull)
-	s.HandleFunc("/unregister", handleUnregister)
-	s.HandleFunc("/", handleAll)
+	for path, handler := range map[string]http.HandlerFunc{
+		"/register":   http.HandlerFunc(handleRegister),
+		"/pull":       http.HandlerFunc(handlePull),
+		"/unregister": http.HandlerFunc(handleUnregister),
+		"/":           http.HandlerFunc(handleAll),
+	} {
+		handle := handler
+		if conf.Variables.AccessLog {
+			handle = func(rw http.ResponseWriter, r *http.Request) {
+				zap.L().Info(
+					"access log",
+					zap.String("path", r.URL.Path),
+				)
+				handler(rw, r)
+			}
+		}
+
+		s.HandleFunc(path, handle)
+	}
 }
 
 func handleRegister(res http.ResponseWriter, req *http.Request) {
