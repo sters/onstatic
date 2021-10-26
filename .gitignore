@@ -10,3 +10,4 @@ coverage.txt
 repositories/*
 dist/
 cmd/server/repositories/
+bin/
