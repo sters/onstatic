@@ -20,6 +20,7 @@ func RegisterHandler(s *http.ServeMux) {
 		"/unregister": http.HandlerFunc(handleUnregister),
 		"/":           http.HandlerFunc(handleAll),
 	} {
+		path, handler := path, handler
 		handle := handler
 		if conf.Variables.AccessLog {
 			handle = func(rw http.ResponseWriter, r *http.Request) {

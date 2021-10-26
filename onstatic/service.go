@@ -2,6 +2,7 @@ package onstatic
 
 import (
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -217,19 +218,22 @@ func doGitPull(repo *git.Repository, branchName string) error {
 		return failure.Wrap(err)
 	}
 
-	opt := &git.PullOptions{
+	err = repo.Fetch(&git.FetchOptions{
 		RemoteName: originName,
 		Auth:       auth,
 		Force:      true,
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return failure.Wrap(err)
 	}
 
-	if branchName != "" {
-		opt.ReferenceName = plumbing.NewBranchReferenceName(branchName)
-	}
-
-	err = w.Pull(opt)
+	err = w.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.NewRemoteReferenceName(originName, branchName),
+		Force:  true,
+	})
 	if err != nil {
 		return failure.Wrap(err)
 	}
+
 	return nil
 }
