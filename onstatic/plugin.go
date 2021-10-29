@@ -142,9 +142,17 @@ func checkLastModTime(pluginFsInfo os.FileInfo, repoName string) error {
 
 var loadPlugin = loadPluginActual // for testing
 
-func loadPluginActual(repoFs billy.Filesystem, filename string) (oplugin.EntryPoint, error) {
+func loadPluginActual(repoFs billy.Filesystem, filename string) (ep oplugin.EntryPoint, reterr error) {
 	path := repoFs.Join(repoFs.Root(), oplugin.PluginDir, filename)
 
+	defer func() {
+		if err := recover(); err != nil {
+			reterr = failure.Unexpected(
+				fmt.Sprintf("%+v", err),
+				failure.Messagef("failed to load plugin: cannot open plugin: %s", path),
+			)
+		}
+	}()
 	p, err := plugin.Open(path)
 	if err != nil {
 		return nil, failure.Wrap(err, failure.Messagef("failed to load plugin: cannot open plugin: %s", path))
