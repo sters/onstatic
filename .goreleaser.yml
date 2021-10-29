@@ -3,8 +3,9 @@ builds:
   binary: onstatic
   env:
     - CGO_ENABLED=1
-  ldflags:
-    - -extldflags "-static"
+  # if use static, plugin will not worked. https://github.com/golang/go/issues/21822
+  #ldflags:
+  #  - -extldflags "-static"
   goos:
     - linux
   goarch:
