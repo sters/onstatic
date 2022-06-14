@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option go_package = "github.com/sters/onstatic/onstatic/plugin";
+
+package plugin;
+
+service OnstaticPlugin {
+  rpc Name(EmptyMessage) returns (NameResponse) {}
+  rpc Start(EmptyMessage) returns (EmptyMessage) {}
+  rpc Stop(EmptyMessage) returns (EmptyMessage) {}
+  rpc Handle(HandleRequest) returns (HandleResponse) {}
+}
+
+message EmptyMessage {}
+
+message NameResponse {
+  string name = 1;
+}
+
+message HandleRequest {
+    string path = 1;
+    map<string, string> header = 2;
+    string body = 3;
+}
+
+message HandleResponse{
+    map<string, string> header = 1;
+    string body = 2;
+}

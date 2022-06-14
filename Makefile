@@ -33,9 +33,21 @@ cover:
 tidy:
 	go mod tidy
 
+.PHONY: build-proto
+build-proto:
+	protoc \
+		--go_out=. \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=. \
+		--go-grpc_opt=paths=source_relative \
+		onstatic/plugin/plugin.proto
+
 .PHONY: build-example-plugin
 build-example-plugin:
-	CGO_ENABLED=1 go build -buildmode=plugin -o plugins/example/example.so plugins/example/main.go
+	@for dir in $(shell ls plugins); do \
+		echo "Build: plugins/$${dir}"; \
+		go build -o plugins/$${dir}/$${dir} plugins/$${dir}/main.go; \
+	done
 
 .PHONY: release-with-docker
 release-with-docker:

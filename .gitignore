@@ -11,3 +11,6 @@ repositories/*
 dist/
 cmd/server/repositories/
 bin/
+
+plugins/*/*
+!plugins/*/main.go

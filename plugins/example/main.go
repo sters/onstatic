@@ -2,34 +2,39 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"os"
 
 	plugin "github.com/sters/onstatic/onstatic/plugin"
-	"go.uber.org/zap"
 )
 
-type greeting struct{}
-
-var _ plugin.API = (*greeting)(nil)
-
-func (g *greeting) Initialize(context.Context) {}
-
-func (g *greeting) Stop(context.Context) {}
-
-func (g *greeting) Handlers() plugin.Handlers {
-	return plugin.Handlers{
-		"/greeting": func(res http.ResponseWriter, req *http.Request) {
-			_, err := res.Write([]byte("Hello, greeting!"))
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%+v", err)
-			}
-		},
-	}
+type example struct {
+	plugin.OnstaticPluginServer
 }
 
-// nolint
-var EntryPoint = plugin.EntryPoint(func(context.Context, *zap.Logger) plugin.API {
-	return &greeting{}
-})
+func (*example) Name(context.Context, *plugin.EmptyMessage) (*plugin.NameResponse, error) {
+	return &plugin.NameResponse{
+		Name: "example",
+	}, nil
+}
+
+func (*example) Start(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
+	return &plugin.EmptyMessage{}, nil
+}
+
+func (*example) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
+	return &plugin.EmptyMessage{}, nil
+}
+
+func (*example) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
+	switch req.Path {
+	case "/example":
+		return &plugin.HandleResponse{
+			Body: "Hello, example!",
+		}, nil
+	}
+
+	return nil, plugin.ErrPluginNotHandledPath
+}
+
+func main() {
+	plugin.Serve(&example{})
+}
