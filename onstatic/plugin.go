@@ -1,180 +1,188 @@
 package onstatic
 
 import (
-	"context"
-	"net/http"
+	context "context"
+	"errors"
+	"io/ioutil"
+	"log"
+	"os/exec"
+	"sync"
+
+	"github.com/hashicorp/go-plugin"
+	"github.com/morikuni/failure"
+	pluginpb "github.com/sters/onstatic/onstatic/plugin"
+	"google.golang.org/grpc/status"
 )
 
-// type loadedPluginsStruct struct {
-// 	m       sync.RWMutex
-// 	plugins map[string]repoPlugins // reponame => plugin name => handlers
-// }
+const (
+	pluginDir = ".onstatic"
+)
 
-// type repoPlugins struct {
-// 	plugins map[string]repoPlugin // plugin name => handlers
-// }
+var (
+	pluginEmptyMessage = &pluginpb.EmptyMessage{}
+)
 
-// type repoPlugin struct {
-// 	lastModified time.Time
-// 	handlers     oplugin.Handlers
-// 	api          oplugin.API
-// }
-
-// var loadedPlugins = &loadedPluginsStruct{
-// 	m:       sync.RWMutex{},
-// 	plugins: map[string]repoPlugins{},
-// }
-
-func handlePlugin(ctx context.Context, requestPath string) http.HandlerFunc {
-	return nil
-
-	// pathes := strings.Split(requestPath, "/")
-	// if len(pathes) < 2 {
-	// 	return nil
-	// }
-
-	// repoName := pathes[1]
-	// pathUnderRepo := "/" + strings.Join(pathes[2:], "/")
-	// repoFs := getRepoFs(repoName)
-
-	// fsInfos, err := repoFs.ReadDir(oplugin.PluginDir)
-	// if err != nil {
-	// 	return nil
-	// }
-
-	// loadPluginIfPossible(ctx, repoName, repoFs, fsInfos)
-
-	// loadedPlugins.m.RLock()
-	// defer loadedPlugins.m.RUnlock()
-
-	// repo, ok := loadedPlugins.plugins[repoName]
-	// if !ok {
-	// 	return nil
-	// }
-
-	// for _, handlers := range repo.plugins {
-	// 	for p, h := range handlers.handlers {
-	// 		if pathUnderRepo == string(p) {
-	// 			return http.HandlerFunc(h)
-	// 		}
-	// 	}
-	// }
-
-	// return nil
+type PluginClient struct {
+	raw  *plugin.Client
+	name string
 }
 
-// func loadPluginIfPossible(ctx context.Context, repoName string, repoFs billy.Filesystem, fsInfos []os.FileInfo) {
-// 	for _, fsInfo := range fsInfos {
-// 		if err := checkLastModTime(fsInfo, repoName); err != nil {
-// 			zap.L().Warn("failed to load plugin, skip", zap.Error(err))
-// 			continue
-// 		}
+func (p *PluginClient) Kill() {
+	p.raw.Kill()
+}
 
-// 		pluginName := fsInfo.Name()
+func (p *PluginClient) GetAPIClient() (pluginpb.OnstaticPluginClient, error) {
+	rpcClient, err := p.raw.Client()
+	if err != nil {
+		return nil, failure.Wrap(err)
+	}
 
-// 		ep, err := loadPlugin(repoFs, pluginName)
-// 		if err != nil {
-// 			zap.L().Warn("failed to load plugin, skip", zap.Error(err))
-// 			continue
-// 		}
+	raw, err := rpcClient.Dispense(pluginpb.EntryPoint)
+	if err != nil {
+		return nil, failure.Wrap(err)
+	}
 
-// 		api := ep(ctx, zap.L())
-// 		api.Initialize(ctx)
-// 		handlers := api.Handlers()
+	cc, ok := raw.(pluginpb.OnstaticPluginClient)
+	if !ok {
+		return nil, errors.New("could not convert API interface")
+	}
 
-// 		loadedPlugins.m.Lock()
-// 		defer loadedPlugins.m.Unlock()
+	return cc, nil
+}
 
-// 		if _, ok := loadedPlugins.plugins[repoName]; !ok {
-// 			loadedPlugins.plugins[repoName] = repoPlugins{
-// 				plugins: map[string]repoPlugin{},
-// 			}
-// 		}
+// NewPluginClient can call from only host side. Plugin must not call this func.
+func NewPluginClient(pluginFile string) *PluginClient {
+	name := getPluginName(pluginFile)
 
-// 		loadedPlugins.plugins[repoName].plugins[pluginName] = repoPlugin{
-// 			lastModified: fsInfo.ModTime(),
-// 			handlers:     handlers,
-// 			api:          api,
-// 		}
+	return &PluginClient{
+		name: name,
+		raw: plugin.NewClient(&plugin.ClientConfig{
+			HandshakeConfig: pluginpb.HandshakeConfig(),
+			Plugins:         pluginpb.PluginMap(),
+			Cmd:             exec.Command(pluginFile, "plugin"),
+			AllowedProtocols: []plugin.Protocol{
+				plugin.ProtocolGRPC,
+			},
+		}),
+	}
+}
 
-// 		handlePaths := make([]string, len(handlers))
-// 		for p := range handlers {
-// 			handlePaths = append(handlePaths, string(p))
-// 		}
-// 		zap.L().Info(
-// 			"plugin loaded",
-// 			zap.String("repository", repoName),
-// 			zap.String("name", pluginName),
-// 			zap.Strings("handlePaths", handlePaths),
-// 		)
-// 	}
-// }
+func getPluginName(pluginFile string) string {
+	cmd := exec.Command(pluginFile, pluginpb.NameArg)
+	reader, _ := cmd.StdoutPipe()
+	defer reader.Close()
 
-// func checkLastModTime(pluginFsInfo os.FileInfo, repoName string) error {
-// 	loadedPlugins.m.RLock()
-// 	defer loadedPlugins.m.RUnlock()
+	_ = cmd.Start()
+	defer func() { _ = cmd.Wait() }()
 
-// 	repo, ok := loadedPlugins.plugins[repoName]
-// 	if !ok {
-// 		return nil
-// 	}
+	buf, _ := ioutil.ReadAll(reader)
 
-// 	p := repo.plugins[pluginFsInfo.Name()]
-// 	if !ok {
-// 		return nil
-// 	}
+	return string(buf)
+}
 
-// 	if pluginFsInfo.ModTime().Before(p.lastModified) {
-// 		return failure.Unexpected("the plugin is not updated")
-// 	}
+type runningPlugin struct {
+	client    *PluginClient
+	apiClient pluginpb.OnstaticPluginClient
+}
 
-// 	return nil
-// }
+type pluginList struct {
+	plugins map[string]*runningPlugin
+	mux     sync.RWMutex
+}
 
-// var loadPlugin = loadPluginActual // for testing
+func (pl *pluginList) Kill() {
+	pl.mux.Lock()
+	defer pl.mux.Unlock()
 
-// func loadPluginActual(repoFs billy.Filesystem, filename string) (ep oplugin.EntryPoint, reterr error) {
-// 	path := repoFs.Join(repoFs.Root(), oplugin.PluginDir, filename)
+	wg := sync.WaitGroup{}
 
-// 	defer func() {
-// 		if err := recover(); err != nil {
-// 			reterr = failure.Unexpected(
-// 				fmt.Sprintf("%+v", err),
-// 				failure.Messagef("failed to load plugin: cannot open plugin: %s", path),
-// 			)
-// 		}
-// 	}()
-// 	p, err := plugin.Open(path)
-// 	if err != nil {
-// 		return nil, failure.Wrap(err, failure.Messagef("failed to load plugin: cannot open plugin: %s", path))
-// 	}
+	for _, p := range pl.plugins {
+		p := p
+		wg.Add(1)
+		go func() {
+			_, _ = p.apiClient.Stop(context.Background(), &pluginpb.EmptyMessage{})
+			p.client.Kill()
+			wg.Done()
+		}()
+	}
 
-// 	sym, err := p.Lookup(oplugin.PluginExportVariableName)
-// 	if err != nil {
-// 		return nil, failure.Wrap(err, failure.Messagef("failed to load plugin: cannot find entry point: %s", oplugin.PluginExportVariableName))
-// 	}
+	wg.Wait()
 
-// 	ep, ok := sym.(oplugin.EntryPoint)
-// 	if !ok {
-// 		epp, ok := sym.(*oplugin.EntryPoint)
-// 		if !ok {
-// 			fmt.Printf("%#q\n", sym)
-// 			return nil, failure.Unexpected("failed to load plugin: missing entry point")
-// 		}
-// 		return *epp, nil
-// 	}
+	pl.plugins = map[string]*runningPlugin{}
+}
 
-// 	return ep, nil
-// }
+func (pl *pluginList) Add(pluginFile string) (*pluginList, error) {
+	pl.mux.Lock()
+	defer pl.mux.Unlock()
 
-func CleanupLoadedPlugins(ctx context.Context) {
-	// loadedPlugins.m.Lock()
-	// defer loadedPlugins.m.Unlock()
+	p := NewPluginClient(pluginFile)
+	if _, ok := pl.plugins[p.name]; ok {
+		return pl, nil
+	}
 
-	// for _, repoPlugins := range loadedPlugins.plugins {
-	// 	for _, p := range repoPlugins.plugins {
-	// 		p.api.Stop(ctx)
-	// 	}
-	// }
-	// loadedPlugins.plugins = map[string]repoPlugins{}
+	api, err := p.GetAPIClient()
+	if err != nil {
+		return nil, failure.Wrap(err)
+	}
+	_, _ = api.Start(context.Background(), &pluginpb.EmptyMessage{})
+
+	pl.plugins[p.name] = &runningPlugin{
+		client:    p,
+		apiClient: api,
+	}
+
+	return pl, nil
+}
+
+func (pl *pluginList) Handle(ctx context.Context, path string, body string) (string, error) {
+	pl.mux.RLock()
+	defer pl.mux.RUnlock()
+
+	for _, p := range pl.plugins {
+		res, err := p.apiClient.Handle(ctx, &pluginpb.HandleRequest{
+			Path: path,
+			Body: body,
+		})
+
+		st, ok := status.FromError(err)
+		if !ok {
+			log.Printf("next err: %+v", err)
+			return "", failure.Wrap(err)
+		}
+
+		if st.Message() == pluginpb.ErrPluginNotHandledPath.Error() {
+			log.Print("next")
+			continue
+		}
+
+		if err != nil {
+			log.Printf("next err: %+v", err)
+			return "", failure.Wrap(err)
+		}
+
+		return res.Body, nil
+	}
+
+	return "", pluginpb.ErrPluginNotHandledPath
+}
+
+var actualPluginList = &pluginList{
+	plugins: map[string]*runningPlugin{},
+}
+
+func LoadPlugin(pluginFile string) error {
+	_, err := actualPluginList.Add(pluginFile)
+	if err != nil {
+		return failure.Wrap(err)
+	}
+
+	return nil
+}
+
+func HandlePlugin(ctx context.Context, path string, body string) (string, error) {
+	return actualPluginList.Handle(ctx, path, body)
+}
+
+func KillAllPlugin() {
+	actualPluginList.Kill()
 }

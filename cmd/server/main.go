@@ -10,23 +10,23 @@ import (
 
 	"github.com/sters/onstatic/conf"
 	"github.com/sters/onstatic/http"
-	"github.com/sters/onstatic/onstatic/plugin"
+	"github.com/sters/onstatic/onstatic"
 	"go.uber.org/zap"
 )
 
 func main() {
 
 	// TODO: move this loading to serve func
-	plugin.LoadPlugin("plugins/example/example")
-	plugin.LoadPlugin("plugins/echo/echo")
+	onstatic.LoadPlugin("plugins/example/example")
+	onstatic.LoadPlugin("plugins/echo/echo")
 
 	// res, err := plugin.Handle(context.Background(), "/example", "example")
 	// fmt.Printf("res = %s, err = %s\n", res, err)
 
-	res, err := plugin.Handle(context.Background(), "/echo/foo/bar/baz", "")
+	res, err := onstatic.HandlePlugin(context.Background(), "/echo/foo/bar/baz", "")
 	fmt.Printf("res = %s, err = %s\n", res, err)
 
-	plugin.Kill()
+	onstatic.KillAllPlugin()
 
 	// conf.Init()
 
