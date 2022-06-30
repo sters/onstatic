@@ -16,6 +16,7 @@ import (
 
 func main() {
 
+	// TODO: move this loading to serve func
 	plugin.LoadPlugin("plugins/example/example")
 	plugin.LoadPlugin("plugins/echo/echo")
 
