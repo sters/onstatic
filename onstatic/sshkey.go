@@ -1,22 +1,22 @@
 package onstatic
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/morikuni/failure"
+	"github.com/sters/onstatic/conf"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/src-d/go-billy.v4"
 )
 
-// key wrapper rsa key
+// key wrapper ed25519 key
 type key struct {
-	*rsa.PrivateKey
-	privateKeyName string
-	publicKeyName  string
+	privateKey ed25519.PrivateKey
+	publicKey  ed25519.PublicKey
 }
 
 // Save private and public keys to directory
@@ -32,18 +32,18 @@ func (k *key) save(fs billy.Filesystem, dir string) error {
 		return failure.Wrap(err)
 	}
 
-	if err := k.savePrivateKey(fs, k.privateKeyName); err != nil {
+	if err := k.savePrivateKey(fs); err != nil {
 		return failure.Wrap(err)
 	}
-	if err := k.savePublicKey(fs, k.publicKeyName); err != nil {
+	if err := k.savePublicKey(fs); err != nil {
 		return failure.Wrap(err)
 	}
 
 	return nil
 }
 
-func (k *key) savePrivateKey(fs billy.Filesystem, filename string) (err error) {
-	f, err := fs.Create(filename)
+func (k *key) savePrivateKey(fs billy.Filesystem) (err error) {
+	f, err := fs.Create(conf.Variables.SSHKeyFilename)
 	if err != nil {
 		return failure.Wrap(err)
 	}
@@ -51,7 +51,7 @@ func (k *key) savePrivateKey(fs billy.Filesystem, filename string) (err error) {
 		err = failure.Wrap(f.Close())
 	}()
 
-	b, err := x509.MarshalPKCS8PrivateKey(k.PrivateKey)
+	b, err := x509.MarshalPKCS8PrivateKey(k.privateKey)
 	if err != nil {
 		return failure.Wrap(err)
 	}
@@ -62,8 +62,8 @@ func (k *key) savePrivateKey(fs billy.Filesystem, filename string) (err error) {
 	})
 }
 
-func (k *key) savePublicKey(fs billy.Filesystem, filename string) (err error) {
-	f, err := fs.Create(filename)
+func (k *key) savePublicKey(fs billy.Filesystem) (err error) {
+	f, err := fs.Create(conf.Variables.SSHPubKeyFilename)
 	if err != nil {
 		return failure.Wrap(err)
 	}
@@ -71,7 +71,7 @@ func (k *key) savePublicKey(fs billy.Filesystem, filename string) (err error) {
 		err = failure.Wrap(f.Close())
 	}()
 
-	pk, err := ssh.NewPublicKey(&k.PublicKey)
+	pk, err := ssh.NewPublicKey(k.publicKey)
 	if err != nil {
 		return failure.Wrap(err)
 	}
@@ -83,18 +83,19 @@ func (k *key) savePublicKey(fs billy.Filesystem, filename string) (err error) {
 // GenerateKey returns new Key instance
 // TODO: pass phrease
 func generateKey(size int, privateKeyName string, publicKeyName string) (*key, error) {
-	k, err := rsa.GenerateKey(rand.Reader, size)
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, failure.Wrap(err)
 	}
 
-	if err = k.Validate(); err != nil {
-		return nil, failure.Wrap(err)
+	testMessage := []byte("hello world!")
+	signed := ed25519.Sign(privateKey, testMessage)
+	if res := ed25519.Verify(publicKey, testMessage, signed); !res {
+		return nil, failure.Unexpected("failed to verify generated key")
 	}
 
 	return &key{
-		PrivateKey:     k,
-		privateKeyName: privateKeyName,
-		publicKeyName:  publicKeyName,
+		publicKey:  publicKey,
+		privateKey: privateKey,
 	}, nil
 }

@@ -26,7 +26,7 @@ func (*example) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessag
 
 func (*example) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
 	switch req.Path {
-	case "/example":
+	case "/api/example":
 		return &plugin.HandleResponse{
 			Body: "Hello, example!",
 		}, nil

@@ -1,10 +1,12 @@
 package onstatic
 
 import (
+	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/sters/onstatic/conf"
+	pluginpb "github.com/sters/onstatic/onstatic/plugin"
 	"go.uber.org/zap"
 )
 
@@ -168,11 +170,18 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// handler := handlePlugin(req.Context(), req.URL.Path)
-	// if handler != nil {
-	// 	handler(res, req)
-	// 	return
-	// }
+	if req.Body != nil {
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		r, err := HandlePlugin(req.Context(), req.URL.Path, string(body))
+		if err != pluginpb.ErrPluginNotHandledPath {
+			_, _ = res.Write([]byte(r))
+			return
+		}
+	}
 
 	fileserver.ServeHTTP(res, req)
 }

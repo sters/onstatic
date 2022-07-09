@@ -28,11 +28,11 @@ func (*echo) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, 
 
 func (*echo) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
 	log.Print(req.Path)
-	if !strings.HasPrefix(req.Path, "/echo/") {
+	if !strings.HasPrefix(req.Path, "/api/echo/") {
 		return nil, plugin.ErrPluginNotHandledPath
 	}
 
-	r := strings.Replace(req.Path, "/echo/", "", 1)
+	r := strings.Replace(req.Path, "/api/echo/", "", 1)
 
 	return &plugin.HandleResponse{
 		Body: r,

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http/cgi"
 	"os"
 	"os/signal"
@@ -15,38 +14,33 @@ import (
 )
 
 func main() {
-
 	// TODO: move this loading to serve func
-	onstatic.LoadPlugin("plugins/example/example")
-	onstatic.LoadPlugin("plugins/echo/echo")
-
+	// onstatic.LoadPlugin("plugins/example/example")
+	// onstatic.LoadPlugin("plugins/echo/echo")
 	// res, err := plugin.Handle(context.Background(), "/example", "example")
 	// fmt.Printf("res = %s, err = %s\n", res, err)
+	// res, err := onstatic.HandlePlugin(context.Background(), "/api/echo/foo/bar/baz", "")
+	// fmt.Printf("res = %s, err = %s\n", res, err)
 
-	res, err := onstatic.HandlePlugin(context.Background(), "/echo/foo/bar/baz", "")
-	fmt.Printf("res = %s, err = %s\n", res, err)
+	conf.Init()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	server, err := http.NewServer(conf.Variables.HTTPPort)
+	if err != nil {
+		zap.L().Fatal("failed to start server", zap.Error(err))
+	}
+	onstatic.RegisterHandler(server.Mux)
+
+	if conf.Variables.CGIMode {
+		runCGIServerMode(ctx, server)
+		return
+	}
+
+	runHTTPServerMode(ctx, server)
 
 	onstatic.KillAllPlugin()
-
-	// conf.Init()
-
-	// ctx, cancel := context.WithCancel(context.Background())
-	// defer cancel()
-
-	// server, err := http.NewServer(conf.Variables.HTTPPort)
-	// if err != nil {
-	// 	zap.L().Fatal("failed to start server", zap.Error(err))
-	// }
-	// onstatic.RegisterHandler(server.Mux)
-
-	// if conf.Variables.CGIMode {
-	// 	runCGIServerMode(ctx, server)
-	// 	return
-	// }
-
-	// runHTTPServerMode(ctx, server)
-
-	// onstatic.CleanupLoadedPlugins(ctx)
 }
 
 func runHTTPServerMode(ctx context.Context, server *http.Server) {

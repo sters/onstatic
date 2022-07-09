@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/sters/onstatic/conf"
-	"gopkg.in/src-d/go-billy.v4"
-	"gopkg.in/src-d/go-billy.v4/memfs"
 )
 
 func Test_getHashedDirectoryName(t *testing.T) {

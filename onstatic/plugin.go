@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/go-plugin"
@@ -15,11 +17,12 @@ import (
 )
 
 const (
-	pluginDir = ".onstatic"
+	pluginDir    = ".onstatic"
+	pluginBinary = "main"
 )
 
 var (
-	pluginEmptyMessage = &pluginpb.EmptyMessage{}
+	errInvalidRequest = failure.Unexpected("invalid request")
 )
 
 type PluginClient struct {
@@ -115,18 +118,18 @@ func (pl *pluginList) Add(pluginFile string) (*pluginList, error) {
 	pl.mux.Lock()
 	defer pl.mux.Unlock()
 
-	p := NewPluginClient(pluginFile)
-	if _, ok := pl.plugins[p.name]; ok {
+	if _, ok := pl.plugins[pluginFile]; ok {
 		return pl, nil
 	}
 
+	p := NewPluginClient(pluginFile)
 	api, err := p.GetAPIClient()
 	if err != nil {
 		return nil, failure.Wrap(err)
 	}
 	_, _ = api.Start(context.Background(), &pluginpb.EmptyMessage{})
 
-	pl.plugins[p.name] = &runningPlugin{
+	pl.plugins[pluginFile] = &runningPlugin{
 		client:    p,
 		apiClient: api,
 	}
@@ -179,8 +182,21 @@ func LoadPlugin(pluginFile string) error {
 	return nil
 }
 
-func HandlePlugin(ctx context.Context, path string, body string) (string, error) {
-	return actualPluginList.Handle(ctx, path, body)
+func HandlePlugin(ctx context.Context, requestPath string, body string) (string, error) {
+	pathes := strings.Split(requestPath, "/")
+	if len(pathes) < 2 {
+		return "", errInvalidRequest
+	}
+
+	repoName := pathes[1]
+	pathUnderRepo := "/" + strings.Join(pathes[2:], "/")
+
+	err := LoadPlugin(filepath.Join(repoName, pluginDir, pluginBinary))
+	if err != nil {
+		return "", failure.Wrap(err)
+	}
+
+	return actualPluginList.Handle(ctx, pathUnderRepo, body)
 }
 
 func KillAllPlugin() {
