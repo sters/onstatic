@@ -7,9 +7,13 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golangci/golangci-lint v1.46.2
 	github.com/morikuni/failure v1.0.0
+	github.com/yudai/pp v2.0.1+incompatible
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 )
+
+// TODO: back to use go-git after PR merged. https://github.com/go-git/go-git/pull/548/
+replace github.com/go-git/go-git/v5 v5.4.2 => github.com/evanelias/go-git/v5 v5.4.3-0.20220620222018-c382f61273e3
 
 require (
 	github.com/Antonboom/errname v0.1.6 // indirect
@@ -62,6 +66,7 @@ require (
 	github.com/sanposhiho/wastedassign/v2 v2.0.6 // indirect
 	github.com/sivchari/containedctx v1.0.2 // indirect
 	github.com/sivchari/tenv v1.5.0 // indirect
+	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/sylvia7788/contextcheck v1.0.4 // indirect
 	github.com/tomarrell/wrapcheck/v2 v2.6.1 // indirect

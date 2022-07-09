@@ -20,6 +20,7 @@ func RegisterHandler(s *http.ServeMux) {
 		"/register":   http.HandlerFunc(handleRegister),
 		"/pull":       http.HandlerFunc(handlePull),
 		"/unregister": http.HandlerFunc(handleUnregister),
+		"/killplugin": http.HandlerFunc(handleKillRepoPlugin),
 		"/":           http.HandlerFunc(handleAll),
 	} {
 		path, handler := path, handler
@@ -95,10 +96,10 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 	}
 
 	reponame := strings.TrimSpace(req.Header.Get(repoKey))
-	reponame = getHashedDirectoryName(reponame)
+	dirname := getHashedDirectoryName(reponame)
 	branchName := strings.TrimSpace(req.Header.Get(branchKey))
 
-	repo, err := loadLocalRepository(reponame)
+	repo, err := loadLocalRepository(dirname)
 	if err != nil {
 		zap.L().Error("failed to load repo", zap.Error(err))
 		res.WriteHeader(http.StatusServiceUnavailable)
@@ -111,9 +112,15 @@ func handlePull(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	zap.L().Info("pull success", zap.String("reponame", reponame), zap.String("branchname", branchName))
+	if err := killPlugin(dirname); err != nil {
+		zap.L().Error("failed to kill plugin", zap.Error(err))
+		res.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	zap.L().Info("pull success", zap.String("reponame", reponame), zap.String("branchname", branchName), zap.String("dirname", dirname))
 	res.WriteHeader(http.StatusOK)
-	if _, err := res.Write([]byte(reponame)); err != nil {
+	if _, err := res.Write([]byte(dirname)); err != nil {
 		zap.L().Error("failed to write stream", zap.Error(err))
 	}
 }
@@ -141,7 +148,36 @@ func handleUnregister(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if err := killPlugin(dirname); err != nil {
+		zap.L().Error("failed to kill plugin", zap.Error(err))
+		res.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
 	zap.L().Info("unregister success", zap.String("reponame", reponame))
+	res.WriteHeader(http.StatusOK)
+	if _, err := res.Write([]byte("ok")); err != nil {
+		zap.L().Error("failed to write stream", zap.Error(err))
+	}
+}
+
+func handleKillRepoPlugin(res http.ResponseWriter, req *http.Request) {
+	if !validate(res, req) {
+		zap.L().Error("failed to validate", zap.Any("reqHeader", req.Header))
+		res.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	reponame := strings.TrimSpace(req.Header.Get(repoKey))
+	dirname := getHashedDirectoryName(reponame)
+
+	if err := killPlugin(dirname); err != nil {
+		zap.L().Error("failed to kill plugin", zap.Error(err))
+		res.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	zap.L().Info("kill plugin success", zap.String("reponame", reponame))
 	res.WriteHeader(http.StatusOK)
 	if _, err := res.Write([]byte("ok")); err != nil {
 		zap.L().Error("failed to write stream", zap.Error(err))
@@ -176,7 +212,7 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		r, err := HandlePlugin(req.Context(), req.URL.Path, string(body))
+		r, err := handlePlugin(req.Context(), req.URL.Path, string(body))
 		if err != pluginpb.ErrPluginNotHandledPath {
 			_, _ = res.Write([]byte(r))
 			return

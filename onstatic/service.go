@@ -19,6 +19,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/morikuni/failure"
 	"github.com/sters/onstatic/conf"
+	"github.com/yudai/pp"
 	"go.uber.org/zap"
 )
 
@@ -224,6 +225,8 @@ func doGitPull(repo *git.Repository, branchName string) error {
 		Force:      true,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		pp.Print(auth)
+		pp.Print(err)
 		return failure.Wrap(err)
 	}
 

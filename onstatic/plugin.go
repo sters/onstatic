@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/morikuni/failure"
 	pluginpb "github.com/sters/onstatic/onstatic/plugin"
+	"github.com/yudai/pp"
 	"google.golang.org/grpc/status"
 )
 
@@ -118,10 +120,19 @@ func (pl *pluginList) Add(pluginFile string) (*pluginList, error) {
 	pl.mux.Lock()
 	defer pl.mux.Unlock()
 
+	// plugin already cached: do nothing
 	if _, ok := pl.plugins[pluginFile]; ok {
 		return pl, nil
 	}
 
+	// plugin is not found: cache empty
+	if _, err := os.Stat(pluginFile); err != nil {
+		pp.Print(err)
+		pl.plugins[pluginFile] = nil
+		return pl, nil
+	}
+
+	// whatever else: load it
 	p := NewPluginClient(pluginFile)
 	api, err := p.GetAPIClient()
 	if err != nil {
@@ -142,6 +153,10 @@ func (pl *pluginList) Handle(ctx context.Context, path string, body string) (str
 	defer pl.mux.RUnlock()
 
 	for _, p := range pl.plugins {
+		if p == nil {
+			continue
+		}
+
 		res, err := p.apiClient.Handle(ctx, &pluginpb.HandleRequest{
 			Path: path,
 			Body: body,
@@ -169,12 +184,29 @@ func (pl *pluginList) Handle(ctx context.Context, path string, body string) (str
 	return "", pluginpb.ErrPluginNotHandledPath
 }
 
+func (pl *pluginList) killSingle(pluginFile string) error {
+	pl.mux.RLock()
+	defer pl.mux.RUnlock()
+
+	p, ok := pl.plugins[pluginFile]
+	if !ok || p == nil {
+		delete(pl.plugins, pluginFile)
+		return nil
+	}
+
+	_, _ = p.apiClient.Stop(context.Background(), &pluginpb.EmptyMessage{})
+	p.client.Kill()
+
+	delete(pl.plugins, pluginFile)
+	return nil
+}
+
 var actualPluginList = &pluginList{
 	plugins: map[string]*runningPlugin{},
 }
 
-func LoadPlugin(pluginFile string) error {
-	_, err := actualPluginList.Add(pluginFile)
+func loadPlugin(pluginFile string) error {
+	_, err := actualPluginList.Add(filepath.Join(getRepositoriesDir(), pluginFile))
 	if err != nil {
 		return failure.Wrap(err)
 	}
@@ -182,7 +214,7 @@ func LoadPlugin(pluginFile string) error {
 	return nil
 }
 
-func HandlePlugin(ctx context.Context, requestPath string, body string) (string, error) {
+func handlePlugin(ctx context.Context, requestPath string, body string) (string, error) {
 	pathes := strings.Split(requestPath, "/")
 	if len(pathes) < 2 {
 		return "", errInvalidRequest
@@ -191,12 +223,20 @@ func HandlePlugin(ctx context.Context, requestPath string, body string) (string,
 	repoName := pathes[1]
 	pathUnderRepo := "/" + strings.Join(pathes[2:], "/")
 
-	err := LoadPlugin(filepath.Join(repoName, pluginDir, pluginBinary))
+	err := loadPlugin(getPluginPath(repoName))
 	if err != nil {
 		return "", failure.Wrap(err)
 	}
 
 	return actualPluginList.Handle(ctx, pathUnderRepo, body)
+}
+
+func killPlugin(repoName string) error {
+	return actualPluginList.killSingle(filepath.Join(getRepositoriesDir(), getPluginPath(repoName)))
+}
+
+func getPluginPath(repoName string) string {
+	return filepath.Join(repoName, pluginDir, pluginBinary)
 }
 
 func KillAllPlugin() {
