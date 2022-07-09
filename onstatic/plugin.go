@@ -15,6 +15,9 @@ import (
 	"github.com/morikuni/failure"
 	pluginpb "github.com/sters/onstatic/onstatic/plugin"
 	"github.com/yudai/pp"
+	zapwrapper "github.com/zaffka/zap-to-hclog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapio"
 	"google.golang.org/grpc/status"
 )
 
@@ -68,6 +71,9 @@ func NewPluginClient(pluginFile string) *PluginClient {
 			AllowedProtocols: []plugin.Protocol{
 				plugin.ProtocolGRPC,
 			},
+			SyncStdout: &zapio.Writer{Log: zap.L(), Level: zap.InfoLevel},
+			SyncStderr: &zapio.Writer{Log: zap.L(), Level: zap.WarnLevel},
+			Logger:     zapwrapper.Wrap(zap.L()),
 		}),
 	}
 }
