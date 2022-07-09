@@ -8,6 +8,7 @@ require (
 	github.com/golangci/golangci-lint v1.46.2
 	github.com/morikuni/failure v1.0.0
 	github.com/yudai/pp v2.0.1+incompatible
+	github.com/zaffka/zap-to-hclog v0.10.5
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 )
@@ -73,7 +74,6 @@ require (
 	github.com/tommy-muehle/go-mnd/v2 v2.5.0 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
-	github.com/zaffka/zap-to-hclog v0.10.5 // indirect
 	gitlab.com/bosi/decorder v0.2.1 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220218215828-6cf2b201936e // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
