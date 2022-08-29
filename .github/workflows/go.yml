@@ -20,7 +20,7 @@ jobs:
 
     - run: make bootstrap-tools
     # TODO: fix all linters
-    - run: make lint; true
+    - run: echo "skip lint" # make lint
     - run: make cover
 
     - uses: codecov/codecov-action@v1
