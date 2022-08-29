@@ -1,7 +1,7 @@
 package onstatic
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -12,7 +12,7 @@ import (
 
 var fileserver http.Handler
 
-// RegisterHandler define http request handler
+// RegisterHandler define http request handler.
 func RegisterHandler(s *http.ServeMux) {
 	fileserver = http.FileServer(http.Dir(getRepositoriesDir()))
 
@@ -184,7 +184,7 @@ func handleKillRepoPlugin(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// handleAll onstatic managing contents
+// handleAll onstatic managing contents.
 func handleAll(res http.ResponseWriter, req *http.Request) {
 	if strings.Contains(req.URL.Path, "/.") {
 		res.WriteHeader(http.StatusNotFound)
@@ -207,7 +207,7 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if req.Body != nil {
-		body, err := ioutil.ReadAll(req.Body)
+		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
 			return
@@ -223,7 +223,7 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 }
 
 func hasIgnoreContents(p string) bool {
-	var ignoreContains = []string{
+	ignoreContains := []string{
 		"/.", "/internal", "/bin/",
 	}
 	for _, c := range ignoreContains {
@@ -235,7 +235,7 @@ func hasIgnoreContents(p string) bool {
 }
 
 func hasIgnoreSuffix(p string) bool {
-	var ignoreSuffix = []string{
+	ignoreSuffix := []string{
 		"/LICENSE", "/Makefile", "/README.md", "/README", "/id_rsa",
 		".bin", ".exe", ".dll",
 		".zip", ".gz", ".tar", ".db",

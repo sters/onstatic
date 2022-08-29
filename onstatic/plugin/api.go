@@ -15,9 +15,7 @@ const (
 	NameArg    = "--name"
 )
 
-var (
-	ErrPluginNotHandledPath = errors.New("not found path")
-)
+var ErrPluginNotHandledPath = errors.New("not found path")
 
 func PluginMap() map[string]plugin.Plugin {
 	return map[string]plugin.Plugin{

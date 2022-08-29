@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Variables of configure
+// Variables of configure.
 var Variables c
 
 type c struct {
@@ -33,7 +33,7 @@ type c struct {
 
 const prefix = "ONSTATIC_"
 
-// Init configuration variales
+// Init configuration variales.
 func Init() {
 	Variables = c{
 		CGIMode:                           getenvBool("CGI_MODE", false),

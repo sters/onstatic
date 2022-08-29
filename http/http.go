@@ -7,7 +7,7 @@ import (
 	"github.com/morikuni/failure"
 )
 
-// Server for http
+// Server for http.
 type Server struct {
 	port string
 	ln   net.Listener
@@ -15,7 +15,7 @@ type Server struct {
 	Mux  *http.ServeMux
 }
 
-// Run this http server
+// Run this http server.
 func (s *Server) Run() error {
 	ln, err := net.Listen("tcp", "127.0.0.1:"+s.port)
 	if err != nil {
@@ -30,7 +30,7 @@ func (s *Server) Run() error {
 	return nil
 }
 
-// Close this http server
+// Close this http server.
 func (s *Server) Close() error {
 	if s.ln != nil {
 		_ = s.ln.Close()
@@ -38,7 +38,7 @@ func (s *Server) Close() error {
 	return s.http.Close()
 }
 
-// NewServer for http
+// NewServer for http.
 func NewServer(port string) (*Server, error) {
 	m := http.NewServeMux()
 	s := &Server{

@@ -4,7 +4,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -92,7 +92,7 @@ func getRepositoryDirectoryPath(reponame string) string {
 func createLocalRepositroy(reponame string) (*git.Repository, error) {
 	dir := getRepositoryDirectoryPath(reponame)
 	fs := fsNew(dir)
-	if err := fs.MkdirAll("/", 0755); err != nil {
+	if err := fs.MkdirAll("/", 0o755); err != nil {
 		return nil, failure.Wrap(err)
 	}
 
@@ -185,7 +185,7 @@ func getSSHPublicKeyContent(repo *git.Repository) ([]byte, error) {
 	}
 	defer f.Close()
 
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		return nil, failure.Wrap(err, failure.Message("failed to readall"))
 	}
@@ -197,7 +197,6 @@ func configureOriginRepository(repo *git.Repository, originURL string) error {
 		Name: originName,
 		URLs: []string{originURL},
 	})
-
 	if err != nil {
 		return failure.Wrap(err)
 	}

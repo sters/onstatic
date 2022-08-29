@@ -13,5 +13,6 @@ func NewLogObserver(_ *testing.T, level zapcore.Level) (*observer.ObservedLogs, 
 	c, observedLogs := observer.New(level)
 	logger := zap.New(c)
 	zap.ReplaceGlobals(logger)
+
 	return observedLogs, logger
 }

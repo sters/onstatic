@@ -3,7 +3,7 @@ package onstatic
 import (
 	context "context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -26,9 +26,7 @@ const (
 	pluginBinary = "main"
 )
 
-var (
-	errInvalidRequest = failure.Unexpected("invalid request")
-)
+var errInvalidRequest = failure.Unexpected("invalid request")
 
 type PluginClient struct {
 	raw  *plugin.Client
@@ -86,7 +84,7 @@ func getPluginName(pluginFile string) string {
 	_ = cmd.Start()
 	defer func() { _ = cmd.Wait() }()
 
-	buf, _ := ioutil.ReadAll(reader)
+	buf, _ := io.ReadAll(reader)
 
 	return string(buf)
 }

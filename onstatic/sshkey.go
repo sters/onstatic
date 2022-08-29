@@ -13,13 +13,13 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// key wrapper ed25519 key
+// key wrapper ed25519 key.
 type key struct {
 	privateKey ed25519.PrivateKey
 	publicKey  ed25519.PublicKey
 }
 
-// Save private and public keys to directory
+// Save private and public keys to directory.
 func (k *key) save(fs billy.Filesystem, dir string) error {
 	if s, err := fs.Stat(dir); err != nil {
 		return failure.Wrap(err, failure.Message("failed to stat"))
@@ -81,7 +81,7 @@ func (k *key) savePublicKey(fs billy.Filesystem) (err error) {
 }
 
 // GenerateKey returns new Key instance
-// TODO: pass phrease
+// TODO: pass phrease.
 func generateKey(size int, privateKeyName string, publicKeyName string) (*key, error) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

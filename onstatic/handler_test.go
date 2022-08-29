@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/sters/onstatic/conf"
 	"github.com/sters/onstatic/testutil"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -25,10 +26,12 @@ type fakeResponse struct {
 func (f *fakeResponse) Header() http.Header {
 	return f.header
 }
+
 func (f *fakeResponse) Write(b []byte) (int, error) {
 	f.body = b
 	return len(b), nil
 }
+
 func (f *fakeResponse) WriteHeader(c int) {
 	f.status = c
 }
@@ -84,7 +87,7 @@ func Test_handleRegister(t *testing.T) {
 			"failed to validate",
 			&http.Request{
 				Header: http.Header{},
-				Method: "GET",
+				Method: http.MethodGet,
 			},
 			nil,
 			http.StatusServiceUnavailable,
@@ -97,7 +100,7 @@ func Test_handleRegister(t *testing.T) {
 					textproto.CanonicalMIMEHeaderKey(validateKey): []string{conf.Variables.HTTPHeaderKey},
 					textproto.CanonicalMIMEHeaderKey(repoKey):     []string{reponame},
 				},
-				Method: "POST",
+				Method: http.MethodPost,
 			},
 			nil,
 			http.StatusOK,
@@ -108,9 +111,7 @@ func Test_handleRegister(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logbuf, _ := testutil.NewLogObserver(t, zapcore.DebugLevel)
 			defer func() {
-				if logbuf.FilterMessage(test.wantLogContents).Len() == 0 {
-					t.Fatalf("want in logs: %s", test.wantLogContents)
-				}
+				assert.NotEqual(t, 0, logbuf.FilterMessage(test.wantLogContents).Len(), "want in logs: %s", test.wantLogContents)
 			}()
 
 			res := &fakeResponse{
@@ -120,19 +121,14 @@ func Test_handleRegister(t *testing.T) {
 
 			handleRegister(res, test.req)
 
-			if test.wantResponseStatus != res.status {
-				t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-			}
+			assert.Equal(t, test.wantResponseStatus, res.status)
 
 			for k, v := range test.wantResponseHeaders {
-				if res.Header().Get(k) != v {
-					t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-				}
+				assert.Equal(t, v, res.Header().Get(k))
 				res.Header().Del(k)
 			}
-			if 0 != len(res.Header()) {
-				t.Fatalf("want = no more header, got = %+v", res.Header())
-			}
+
+			assert.Len(t, res.Header(), 0)
 		})
 	}
 }
@@ -154,9 +150,7 @@ func Test_handleUnregister(t *testing.T) {
 
 	// setup
 	_, err := createLocalRepositroy(getHashedDirectoryName(reponame))
-	if err != nil {
-		t.Fatalf("failed to create local repository: %+v", err)
-	}
+	assert.NoError(t, err)
 
 	tests := []struct {
 		name                string
@@ -169,7 +163,7 @@ func Test_handleUnregister(t *testing.T) {
 			"failed to validate",
 			&http.Request{
 				Header: http.Header{},
-				Method: "GET",
+				Method: http.MethodGet,
 			},
 			nil,
 			http.StatusServiceUnavailable,
@@ -182,7 +176,7 @@ func Test_handleUnregister(t *testing.T) {
 					textproto.CanonicalMIMEHeaderKey(validateKey): []string{conf.Variables.HTTPHeaderKey},
 					textproto.CanonicalMIMEHeaderKey(repoKey):     []string{reponame},
 				},
-				Method: "POST",
+				Method: http.MethodPost,
 			},
 			nil,
 			http.StatusOK,
@@ -193,9 +187,7 @@ func Test_handleUnregister(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logbuf, _ := testutil.NewLogObserver(t, zapcore.DebugLevel)
 			defer func() {
-				if logbuf.FilterMessage(test.wantLogContents).Len() == 0 {
-					t.Fatalf("want in logs: %s", test.wantLogContents)
-				}
+				assert.NotEqual(t, 0, logbuf.FilterMessage(test.wantLogContents).Len(), "want in logs: %s", test.wantLogContents)
 			}()
 
 			res := &fakeResponse{
@@ -205,26 +197,19 @@ func Test_handleUnregister(t *testing.T) {
 
 			handleUnregister(res, test.req)
 
-			if test.wantResponseStatus != res.status {
-				t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-			}
+			assert.Equal(t, test.wantResponseStatus, res.status)
 
 			for k, v := range test.wantResponseHeaders {
-				if res.Header().Get(k) != v {
-					t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-				}
+				assert.Equal(t, v, res.Header().Get(k))
 				res.Header().Del(k)
 			}
-			if 0 != len(res.Header()) {
-				t.Fatalf("want = no more header, got = %+v", res.Header())
-			}
+
+			assert.Len(t, res.Header(), 0)
 
 			if res.status == http.StatusOK {
 				// check repo removed
 				_, e := loadLocalRepository(getHashedDirectoryName(reponame))
-				if e == nil {
-					t.Fatalf("want = repo can't load, got loaded")
-				}
+				assert.Error(t, e)
 			}
 		})
 	}
@@ -247,9 +232,7 @@ func Test_handlePull(t *testing.T) {
 
 	// setup
 	_, err := createLocalRepositroy(getHashedDirectoryName(reponame))
-	if err != nil {
-		t.Fatalf("failed to create local repository: %+v", err)
-	}
+	assert.NoError(t, err)
 
 	tests := []struct {
 		name                string
@@ -262,7 +245,7 @@ func Test_handlePull(t *testing.T) {
 			"failed to validate",
 			&http.Request{
 				Header: http.Header{},
-				Method: "GET",
+				Method: http.MethodGet,
 			},
 			nil,
 			http.StatusServiceUnavailable,
@@ -275,7 +258,7 @@ func Test_handlePull(t *testing.T) {
 					textproto.CanonicalMIMEHeaderKey(validateKey): []string{conf.Variables.HTTPHeaderKey},
 					textproto.CanonicalMIMEHeaderKey(repoKey):     []string{reponame + "foo"},
 				},
-				Method: "POST",
+				Method: http.MethodPost,
 			},
 			nil,
 			http.StatusServiceUnavailable,
@@ -288,7 +271,7 @@ func Test_handlePull(t *testing.T) {
 					textproto.CanonicalMIMEHeaderKey(validateKey): []string{conf.Variables.HTTPHeaderKey},
 					textproto.CanonicalMIMEHeaderKey(repoKey):     []string{reponame},
 				},
-				Method: "POST",
+				Method: http.MethodPost,
 			},
 			nil,
 			http.StatusServiceUnavailable,
@@ -299,9 +282,7 @@ func Test_handlePull(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logbuf, _ := testutil.NewLogObserver(t, zapcore.DebugLevel)
 			defer func() {
-				if logbuf.FilterMessage(test.wantLogContents).Len() == 0 {
-					t.Fatalf("want in logs: %s", test.wantLogContents)
-				}
+				assert.NotEqual(t, 0, logbuf.FilterMessage(test.wantLogContents).Len(), "want in logs: %s", test.wantLogContents)
 			}()
 
 			res := &fakeResponse{
@@ -311,19 +292,14 @@ func Test_handlePull(t *testing.T) {
 
 			handlePull(res, test.req)
 
-			if test.wantResponseStatus != res.status {
-				t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-			}
+			assert.Equal(t, test.wantResponseStatus, res.status)
 
 			for k, v := range test.wantResponseHeaders {
-				if res.Header().Get(k) != v {
-					t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-				}
+				assert.Equal(t, v, res.Header().Get(k))
 				res.Header().Del(k)
 			}
-			if 0 != len(res.Header()) {
-				t.Fatalf("want = no more header, got = %+v", res.Header())
-			}
+
+			assert.Len(t, res.Header(), 0)
 		})
 	}
 }
@@ -355,13 +331,10 @@ func Test_handleAll(t *testing.T) {
 		}
 		for name, body := range files {
 			f, err := fs.Create(name)
-			if err != nil {
-				t.Fatalf("failed to create file: %+v", err)
-			}
+			assert.NoError(t, err)
 
-			if _, err := f.Write([]byte(body)); err != nil {
-				t.Fatalf("failed to write buffer: %+v", err)
-			}
+			_, err = f.Write([]byte(body))
+			assert.NoError(t, err)
 
 			f.Close()
 		}
@@ -369,7 +342,7 @@ func Test_handleAll(t *testing.T) {
 
 	generateReq := func(p string) *http.Request {
 		return &http.Request{
-			Method: "GET",
+			Method: http.MethodGet,
 			URL: &url.URL{
 				Path: p,
 			},
@@ -434,13 +407,8 @@ func Test_handleAll(t *testing.T) {
 
 			handleAll(res, test.req)
 
-			if test.wantResponseStatus != res.status {
-				t.Fatalf("want = %+v, got = %+v", test.wantResponseStatus, res.status)
-			}
-
-			if test.wantResponseBody != string(res.body) {
-				t.Fatalf("want = %s, got = %s", test.wantResponseBody, res.body)
-			}
+			assert.Equal(t, test.wantResponseStatus, res.status)
+			assert.Equal(t, test.wantResponseBody, string(res.body))
 		})
 	}
 }

@@ -1,0 +1,41 @@
+run:
+  skip-dirs:
+    - bin
+    - .github
+    - tools
+
+linters-settings:
+  govet:
+    check-shadowing: true
+
+linters:
+  enable-all: true
+  disable:
+    - cyclop
+    - exhaustive
+    - exhaustivestruct
+    - exhaustruct
+    - funlen
+    - gocognit
+    - godox
+    - gomnd
+    - interfacer
+    - testpackage
+    - wsl
+    - dupl
+    - paralleltest
+    - nlreturn
+    - nosnakecase
+    - dogsled
+    - ireturn
+
+issues:
+  exclude-rules:
+    - text: "shadow: declaration of \"err\""
+      linters: ["govet"]
+    - text: "use of `fmt.Print"
+      linters: ["forbidigo"]
+    - text: "is too short for the scope of its usage"
+      linters: ["varnamelen"]
+    - text: "`if err != nil` has complex nested blocks"
+      linters: ["nestif"]
