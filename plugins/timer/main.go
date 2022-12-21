@@ -52,8 +52,6 @@ func (t *timer) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessag
 }
 
 func (t *timer) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
-	plugin.Log(req.Path)
-
 	switch req.Path {
 	case "/api/timer":
 		return &plugin.HandleResponse{
