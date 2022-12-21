@@ -51,7 +51,7 @@ func (p *onstaticPluginImpl) GRPCClient(ctx context.Context, broker *plugin.GRPC
 func Serve(server OnstaticPluginServer) {
 	pluginName, err := server.Name(context.Background(), &EmptyMessage{})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to fetch pluging name from server: %s", err)
+		fmt.Fprintf(os.Stderr, "failed to fetch plugin name: %s", err)
 		os.Exit(1)
 	}
 

@@ -3,7 +3,9 @@ package onstatic
 import (
 	context "context"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,7 +60,7 @@ func (p *PluginClient) GetAPIClient() (pluginpb.OnstaticPluginClient, error) {
 // NewPluginClient can call from only host side. Plugin must not call this func.
 func NewPluginClient(pluginFile string) *PluginClient {
 	name := getPluginName(pluginFile)
-	logger := zap.L().Named("plugin")
+	logger := zap.L().Named("plugin").With(zap.String("plugin_name", name))
 
 	return &PluginClient{
 		name: name,
@@ -86,7 +88,7 @@ func getPluginName(pluginFile string) string {
 
 	buf, _ := io.ReadAll(reader)
 
-	return string(buf)
+	return strings.TrimSpace(string(buf))
 }
 
 type runningPlugin struct {
@@ -209,10 +211,18 @@ var actualPluginList = &pluginList{
 	plugins: map[string]*runningPlugin{},
 }
 
-func loadPlugin(pluginFile string) error {
-	_, err := actualPluginList.Add(filepath.Join(getRepositoriesDir(), pluginFile))
+func loadPlugin(dir string) error {
+	files, err := ioutil.ReadDir(dir)
+	fmt.Printf("%+v", dir)
 	if err != nil {
 		return failure.Wrap(err)
+	}
+
+	for _, file := range files {
+		_, err := actualPluginList.Add(filepath.Join(dir, file.Name()))
+		if err != nil {
+			return failure.Wrap(err)
+		}
 	}
 
 	return nil
@@ -227,7 +237,7 @@ func handlePlugin(ctx context.Context, requestPath string, body string) (string,
 	repoName := pathes[1]
 	pathUnderRepo := "/" + strings.Join(pathes[2:], "/")
 
-	err := loadPlugin(getPluginPath(repoName))
+	err := loadPlugin(getPluginDir(repoName))
 	if err != nil {
 		return "", failure.Wrap(err)
 	}
@@ -236,11 +246,15 @@ func handlePlugin(ctx context.Context, requestPath string, body string) (string,
 }
 
 func killPlugin(repoName string) error {
-	return actualPluginList.killSingle(filepath.Join(getRepositoriesDir(), getPluginPath(repoName)))
+	return actualPluginList.killSingle(getPluginPath(repoName))
+}
+
+func getPluginDir(repoName string) string {
+	return filepath.Join(getRepositoriesDir(), repoName, pluginDir)
 }
 
 func getPluginPath(repoName string) string {
-	return filepath.Join(repoName, pluginDir, pluginBinary)
+	return filepath.Join(getPluginDir(repoName), pluginBinary)
 }
 
 func KillAllPlugin() {
