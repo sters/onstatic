@@ -47,7 +47,7 @@ func Init() {
 		HTTPHeaderKey:                     getenv("HTTP_HEADER_KEY", "onstaticonstaticonstatic"),
 		AccessLog:                         getenvBool("ACCESS_LOG", true),
 		logger: logger(
-			zapcore.InfoLevel,
+			zapcore.DebugLevel,                     // for plugin logging
 			getenv("STDLOG_OUTPUT_PATH", "stdout"), // "/var/log/onstatic/stdout.log"),
 			getenv("ERRLOG_OUTPUT_PATH", "stderr"), // "/var/log/onstatic/stderr.log"),
 		),

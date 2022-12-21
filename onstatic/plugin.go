@@ -4,7 +4,6 @@ import (
 	context "context"
 	"errors"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +16,7 @@ import (
 	"github.com/yudai/pp"
 	zapwrapper "github.com/zaffka/zap-to-hclog"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapio"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/status"
 )
 
@@ -59,6 +58,7 @@ func (p *PluginClient) GetAPIClient() (pluginpb.OnstaticPluginClient, error) {
 // NewPluginClient can call from only host side. Plugin must not call this func.
 func NewPluginClient(pluginFile string) *PluginClient {
 	name := getPluginName(pluginFile)
+	logger := zap.L().Named("plugin")
 
 	return &PluginClient{
 		name: name,
@@ -69,9 +69,9 @@ func NewPluginClient(pluginFile string) *PluginClient {
 			AllowedProtocols: []plugin.Protocol{
 				plugin.ProtocolGRPC,
 			},
-			SyncStdout: &zapio.Writer{Log: zap.L(), Level: zap.InfoLevel},
-			SyncStderr: &zapio.Writer{Log: zap.L(), Level: zap.WarnLevel},
-			Logger:     zapwrapper.Wrap(zap.L()),
+			SyncStdout: &zapWriter{logger: logger, level: zap.InfoLevel},
+			SyncStderr: &zapWriter{logger: logger, level: zap.WarnLevel},
+			Logger:     zapwrapper.Wrap(logger),
 		}),
 	}
 }
@@ -168,17 +168,17 @@ func (pl *pluginList) Handle(ctx context.Context, path string, body string) (str
 
 		st, ok := status.FromError(err)
 		if !ok {
-			log.Printf("next err: %+v", err)
+			zap.L().Info("next err", zap.Error(err))
 			return "", failure.Wrap(err)
 		}
 
 		if st.Message() == pluginpb.ErrPluginNotHandledPath.Error() {
-			log.Print("next")
+			zap.L().Info("ErrPluginNotHandledPath, next")
 			continue
 		}
 
 		if err != nil {
-			log.Printf("next err: %+v", err)
+			zap.L().Info("next err", zap.Error(err))
 			return "", failure.Wrap(err)
 		}
 
@@ -245,4 +245,17 @@ func getPluginPath(repoName string) string {
 
 func KillAllPlugin() {
 	actualPluginList.Kill()
+}
+
+type zapWriter struct {
+	logger *zap.Logger
+	level  zapcore.Level
+}
+
+var _ io.Writer = (*zapWriter)(nil)
+
+func (z *zapWriter) Write(p []byte) (int, error) {
+	z.logger.Log(z.level, string(p))
+
+	return len(p), nil
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	plugin "github.com/sters/onstatic/onstatic/plugin"
@@ -27,7 +26,6 @@ func (*echo) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, 
 }
 
 func (*echo) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
-	log.Print(req.Path)
 	if !strings.HasPrefix(req.Path, "/api/echo/") {
 		return nil, plugin.ErrPluginNotHandledPath
 	}

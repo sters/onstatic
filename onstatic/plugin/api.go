@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/hashicorp/go-plugin"
 	grpc "google.golang.org/grpc"
@@ -49,9 +51,11 @@ func (p *onstaticPluginImpl) GRPCClient(ctx context.Context, broker *plugin.GRPC
 func Serve(server OnstaticPluginServer) {
 	pluginName, err := server.Name(context.Background(), &EmptyMessage{})
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "failed to fetch pluging name from server: %s", err)
+		os.Exit(1)
 	}
 
+	// Hack for server, it's normal behavior.
 	if len(os.Args) == 2 && os.Args[1] == NameArg {
 		fmt.Println(pluginName.Name)
 		os.Exit(1)
@@ -65,4 +69,15 @@ func Serve(server OnstaticPluginServer) {
 		Plugins:         p,
 		GRPCServer:      plugin.DefaultGRPCServer,
 	})
+}
+
+func Log(format string, a ...any) {
+	fmt.Fprintf(os.Stdout, format, a...)
+}
+
+func SignalChan() chan os.Signal {
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGTERM, os.Interrupt)
+
+	return sigCh
 }

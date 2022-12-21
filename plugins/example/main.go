@@ -17,10 +17,14 @@ func (*example) Name(context.Context, *plugin.EmptyMessage) (*plugin.NameRespons
 }
 
 func (*example) Start(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
+	plugin.Log("plugin starting")
+
 	return &plugin.EmptyMessage{}, nil
 }
 
 func (*example) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
+	plugin.Log("plugin stopping")
+
 	return &plugin.EmptyMessage{}, nil
 }
 

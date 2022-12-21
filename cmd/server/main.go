@@ -14,14 +14,6 @@ import (
 )
 
 func main() {
-	// TODO: move this loading to serve func
-	// onstatic.LoadPlugin("plugins/example/example")
-	// onstatic.LoadPlugin("plugins/echo/echo")
-	// res, err := plugin.Handle(context.Background(), "/example", "example")
-	// fmt.Printf("res = %s, err = %s\n", res, err)
-	// res, err := onstatic.HandlePlugin(context.Background(), "/api/echo/foo/bar/baz", "")
-	// fmt.Printf("res = %s, err = %s\n", res, err)
-
 	conf.Init()
 
 	ctx, cancel := context.WithCancel(context.Background())
