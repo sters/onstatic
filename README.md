@@ -34,23 +34,29 @@ You can get hashed repository name. Try access `localhost:18888/{Hashed Reposito
 
 ## Plugins
 
-See [plugins/example](plugins/example).
+The plugin will run on another process. Even if your plugin has broken, it's no problem on onstatic itself. See [plugins](plugins) to understand implementations.
 
-You need implement `EntryPoint` on [onstatic/plugin/api.go](onstatic/plugin/api.go).
+You need implement `plugin.OnstaticPluginServer` on [onstatic/plugin/plugin_grpc.pb.go](onstatic/plugin/plugin_grpc.pb.go) and build it like this:
 
-Also you need set *.so file into `.onstatic` dir on top of your repository. Like this:
+```shell
+go build -o your_plugin_name your_plugin_dir/main.go;
+```
+
+Then, you need set binary file into `.onstatic` dir on top of your repository. Like this:
 
 ```text
 - foobar_repository
     - .onstatic
-        - foo.so
-        - bar.so
+        - foo
+        - bar
     - other_dirs
         - other_files
     - more_other_files
 ```
 
-## Other Informations
+onstatic will automatically load plugins and reflect to endpoints.
 
-See [conf/conf.go](conf/conf.go), [onstatic/handler.go](onstatic/handler.go). You can do it.
+## Other Information
+
+See [conf/conf.go](conf/conf.go), [onstatic/handler.go](onstatic/handler.go). You can customize it.
 
