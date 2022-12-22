@@ -135,6 +135,12 @@ func loadLocalRepository(reponame string) (*git.Repository, error) {
 	return r, nil
 }
 
+func repositoryExists(reponame string) bool {
+	fs := fsNew(getRepositoriesDir())
+	_, err := fs.Stat(reponame)
+	return err == nil
+}
+
 func generateNewDeploySSHKey(repo *git.Repository) error {
 	k, err := generateKey(
 		conf.Variables.SSHKeySize,

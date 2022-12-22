@@ -201,6 +201,11 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if !repositoryExists(pathes[1]) {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	if hasIgnoreContents(req.URL.Path) || hasIgnoreSuffix(req.URL.Path) {
 		res.WriteHeader(http.StatusNotFound)
 		return
@@ -214,6 +219,7 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		}
 		r, err := handlePlugin(req.Context(), req.URL.Path, string(body))
 		if err != pluginpb.ErrPluginNotHandledPath {
+			zap.L().Info("failed to load plugin", zap.Error(err))
 			_, _ = res.Write([]byte(r))
 			return
 		}

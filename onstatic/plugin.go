@@ -3,7 +3,6 @@ package onstatic
 import (
 	context "context"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -213,7 +212,6 @@ var actualPluginList = &pluginList{
 
 func loadPlugin(dir string) error {
 	files, err := ioutil.ReadDir(dir)
-	fmt.Printf("%+v", dir)
 	if err != nil {
 		return failure.Wrap(err)
 	}
