@@ -235,7 +235,6 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	zap.L().Info("using fileserver")
 	fileserver.ServeHTTP(res, req)
 }
 
