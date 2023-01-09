@@ -14,3 +14,4 @@ bin/
 
 plugins/*/*
 !plugins/*/main.go
+data.json

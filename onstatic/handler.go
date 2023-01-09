@@ -207,11 +207,6 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if hasIgnoreContents(req.URL.Path) || hasIgnoreSuffix(req.URL.Path) {
-		res.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	if req.Body != nil {
 		header := map[string][]string(req.Header)
 		header["method"] = []string{strings.ToLower(req.Method)}
@@ -235,34 +230,28 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	if hasIgnoreContents(req.URL.Path) {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	fileserver.ServeHTTP(res, req)
 }
 
 func hasIgnoreContents(p string) bool {
 	ignoreContains := []string{
+		"..",
 		"/.", "/internal", "/bin/",
+		"/LICENSE", "/Makefile", "/README.md", "/README", "/id_rsa",
+		".bin", ".exe", ".dll",
+		".zip", ".gz", ".tar", ".db",
+		".json", ".conf",
 	}
 	for _, c := range ignoreContains {
 		if strings.Contains(p, c) {
 			return true
 		}
 	}
-	return false
-}
-
-func hasIgnoreSuffix(p string) bool {
-	ignoreSuffix := []string{
-		"/LICENSE", "/Makefile", "/README.md", "/README", "/id_rsa",
-		".bin", ".exe", ".dll",
-		".zip", ".gz", ".tar", ".db",
-		".json", ".conf",
-	}
-	for _, s := range ignoreSuffix {
-		if strings.HasSuffix(p, s) {
-			return true
-		}
-	}
-
 	return false
 }
 

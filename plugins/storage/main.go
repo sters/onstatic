@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/alphadose/haxmap"
@@ -13,7 +14,7 @@ import (
 const storageFilename = "data.json"
 
 type storage struct {
-	plugin.OnstaticPluginServer
+	plugin.BasicServer
 
 	store *haxmap.Map[string, int64]
 }
@@ -28,39 +29,27 @@ func (app *storage) Start(context.Context, *plugin.EmptyMessage) (*plugin.EmptyM
 	app.store = haxmap.New[string, int64]()
 	app.load()
 
+	app.RegisterHandler(plugin.HTTPMethodGET, "/api/storage/read", func(w http.ResponseWriter, r *http.Request) {
+		d, _ := app.store.Get("data")
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(fmt.Sprintf("Data = %d", d)))
+	})
+
+	app.RegisterHandler(plugin.HTTPMethodGET, "/api/storage/write", func(w http.ResponseWriter, r *http.Request) {
+		if d, ok := app.store.Get("data"); ok {
+			app.store.Set("data", d+1)
+		} else {
+			app.store.Set("data", 1)
+		}
+	})
+
 	return &plugin.EmptyMessage{}, nil
 }
 
 func (app *storage) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
 	app.flush()
 	return &plugin.EmptyMessage{}, nil
-}
-
-func (app *storage) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
-	// plugin.Handle(ctx, "get", "/api/storage/read", func() {
-	// })
-
-	switch req.Path {
-	case "/api/storage/read":
-		d, _ := app.store.Get("data")
-
-		return &plugin.HandleResponse{
-			Body: fmt.Sprintf("Data = %d", d),
-		}, nil
-
-	case "/api/storage/write":
-		if d, ok := app.store.Get("data"); ok {
-			app.store.Set("data", d+1)
-		} else {
-			app.store.Set("data", 1)
-		}
-
-		return &plugin.HandleResponse{
-			Body: "ok",
-		}, nil
-	}
-
-	return nil, plugin.ErrPluginNotHandledPath
 }
 
 func (app *storage) load() {

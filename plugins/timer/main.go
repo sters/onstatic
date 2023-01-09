@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"sync"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 )
 
 type timer struct {
-	plugin.OnstaticPluginServer
+	plugin.BasicServer
 
 	latestUpdate    time.Time
 	mux             sync.RWMutex
@@ -42,6 +43,11 @@ func (t *timer) Start(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessa
 		}
 	}()
 
+	t.RegisterHandler(plugin.HTTPMethodGET, "/api/timer", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(t.readLatestUpdate()))
+	})
+
 	return &plugin.EmptyMessage{}, nil
 }
 
@@ -49,17 +55,6 @@ func (t *timer) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessag
 	t.tickerCtxCancel()
 
 	return &plugin.EmptyMessage{}, nil
-}
-
-func (t *timer) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
-	switch req.Path {
-	case "/api/timer":
-		return &plugin.HandleResponse{
-			Body: t.readLatestUpdate(),
-		}, nil
-	}
-
-	return nil, plugin.ErrPluginNotHandledPath
 }
 
 func (t *timer) updateLatestUpdate(tt time.Time) {
