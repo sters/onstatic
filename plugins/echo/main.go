@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"strings"
+	"encoding/json"
+	"net/http"
 
-	plugin "github.com/sters/onstatic/onstatic/plugin"
+	plugin "github.com/sters/onstatic/pluginapi"
 )
 
 type echo struct {
-	plugin.OnstaticPluginServer
+	plugin.BasicServer
 }
 
 func (*echo) Name(context.Context, *plugin.EmptyMessage) (*plugin.NameResponse, error) {
@@ -17,24 +18,15 @@ func (*echo) Name(context.Context, *plugin.EmptyMessage) (*plugin.NameResponse, 
 	}, nil
 }
 
-func (*echo) Start(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
+func (e *echo) Start(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
+	e.RegisterHandler(plugin.HTTPMethodGET, "/api/echo/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+
+		enc := json.NewEncoder(w)
+		_ = enc.Encode(r.Header)
+	})
+
 	return &plugin.EmptyMessage{}, nil
-}
-
-func (*echo) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMessage, error) {
-	return &plugin.EmptyMessage{}, nil
-}
-
-func (*echo) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
-	if !strings.HasPrefix(req.Path, "/api/echo/") {
-		return nil, plugin.ErrPluginNotHandledPath
-	}
-
-	r := strings.Replace(req.Path, "/api/echo/", "", 1)
-
-	return &plugin.HandleResponse{
-		Body: r,
-	}, nil
 }
 
 func main() {

@@ -13,7 +13,7 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/morikuni/failure"
-	pluginpb "github.com/sters/onstatic/onstatic/plugin"
+	pluginpb "github.com/sters/onstatic/pluginapi"
 	"github.com/yudai/pp"
 	zapwrapper "github.com/zaffka/zap-to-hclog"
 	"go.uber.org/zap"
@@ -153,7 +153,7 @@ func (pl *pluginList) Add(pluginFile string) (*pluginList, error) {
 	return pl, nil
 }
 
-func (pl *pluginList) Handle(ctx context.Context, path string, body string) (string, error) {
+func (pl *pluginList) Handle(ctx context.Context, path string, header map[string][]string, body string) (string, error) {
 	pl.mux.RLock()
 	defer pl.mux.RUnlock()
 
@@ -162,9 +162,18 @@ func (pl *pluginList) Handle(ctx context.Context, path string, body string) (str
 			continue
 		}
 
+		h := make([]*pluginpb.Header, 0, len(header))
+		for k, v := range header {
+			h = append(h, &pluginpb.Header{
+				Key:   k,
+				Value: v,
+			})
+		}
+
 		res, err := p.apiClient.Handle(ctx, &pluginpb.HandleRequest{
-			Path: path,
-			Body: body,
+			Path:   path,
+			Header: h,
+			Body:   body,
 		})
 
 		st, ok := status.FromError(err)
@@ -175,6 +184,10 @@ func (pl *pluginList) Handle(ctx context.Context, path string, body string) (str
 
 		if st.Message() == pluginpb.ErrPluginNotHandledPath.Error() {
 			zap.L().Info("ErrPluginNotHandledPath, next")
+			continue
+		}
+
+		if errors.Is(err, context.Canceled) {
 			continue
 		}
 
@@ -226,7 +239,7 @@ func loadPlugin(dir string) error {
 	return nil
 }
 
-func handlePlugin(ctx context.Context, requestPath string, body string) (string, error) {
+func handlePlugin(ctx context.Context, requestPath string, header map[string][]string, body string) (string, error) {
 	pathes := strings.Split(requestPath, "/")
 	if len(pathes) < 2 {
 		return "", errInvalidRequest
@@ -240,7 +253,7 @@ func handlePlugin(ctx context.Context, requestPath string, body string) (string,
 		return "", failure.Wrap(err)
 	}
 
-	return actualPluginList.Handle(ctx, pathUnderRepo, body)
+	return actualPluginList.Handle(ctx, pathUnderRepo, header, body)
 }
 
 func killPlugin(repoName string) error {

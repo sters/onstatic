@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/alphadose/haxmap"
-	plugin "github.com/sters/onstatic/onstatic/plugin"
+	plugin "github.com/sters/onstatic/pluginapi"
 )
 
 const storageFilename = "data.json"
@@ -37,6 +37,9 @@ func (app *storage) Stop(context.Context, *plugin.EmptyMessage) (*plugin.EmptyMe
 }
 
 func (app *storage) Handle(ctx context.Context, req *plugin.HandleRequest) (*plugin.HandleResponse, error) {
+	// plugin.Handle(ctx, "get", "/api/storage/read", func() {
+	// })
+
 	switch req.Path {
 	case "/api/storage/read":
 		d, _ := app.store.Get("data")

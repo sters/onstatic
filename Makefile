@@ -40,7 +40,7 @@ build-proto:
 		--go_opt=paths=source_relative \
 		--go-grpc_out=. \
 		--go-grpc_opt=paths=source_relative \
-		onstatic/plugin/plugin.proto
+		pluginapi/plugin.proto
 
 .PHONY: build-example-plugin
 build-example-plugin:

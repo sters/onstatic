@@ -1,12 +1,13 @@
 package onstatic
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/sters/onstatic/conf"
-	pluginpb "github.com/sters/onstatic/onstatic/plugin"
+	pluginpb "github.com/sters/onstatic/pluginapi"
 	"go.uber.org/zap"
 )
 
@@ -212,19 +213,29 @@ func handleAll(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if req.Body != nil {
+		header := map[string][]string(req.Header)
+		header["method"] = []string{strings.ToLower(req.Method)}
+
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		r, err := handlePlugin(req.Context(), req.URL.Path, string(body))
-		if err != pluginpb.ErrPluginNotHandledPath {
+
+		r, err := handlePlugin(req.Context(), req.URL.Path, header, string(body))
+		if err != nil && !errors.Is(err, pluginpb.ErrPluginNotHandledPath) {
 			zap.L().Info("failed to load plugin", zap.Error(err))
+			_, _ = res.Write([]byte(r))
+			return
+		}
+
+		if err == nil {
 			_, _ = res.Write([]byte(r))
 			return
 		}
 	}
 
+	zap.L().Info("using fileserver")
 	fileserver.ServeHTTP(res, req)
 }
 

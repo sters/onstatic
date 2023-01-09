@@ -10,8 +10,8 @@ package onstatic
 // 	"testing"
 // 	"time"
 
-// 	"github.com/sters/onstatic/onstatic/plugin"
-// 	oplugin "github.com/sters/onstatic/onstatic/plugin"
+// 	"github.com/sters/onstatic/pluginapi"
+// 	oplugin "github.com/sters/onstatic/pluginapi"
 // 	"go.uber.org/zap"
 // 	"gopkg.in/go-git/go-billy.v4"
 // 	"gopkg.in/go-git/go-billy.v4/memfs"

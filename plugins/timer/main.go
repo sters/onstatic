@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	plugin "github.com/sters/onstatic/onstatic/plugin"
+	plugin "github.com/sters/onstatic/pluginapi"
 )
 
 type timer struct {
