@@ -322,6 +322,9 @@ func Test_handleAll(t *testing.T) {
 
 	// setup
 	{
+		rootFs := fsNew(getRepositoriesDir())
+		rootFs.Create(getHashedDirectoryName(reponame))
+
 		fs := fsNew(getRepositoryDirectoryPath(getHashedDirectoryName(reponame)))
 		files := map[string]string{
 			"/foo.txt":   "Hello world",
