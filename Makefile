@@ -48,12 +48,3 @@ build-example-plugin:
 		echo "Build: plugins/$${dir}"; \
 		go build -o plugins/$${dir}/$${dir} plugins/$${dir}/main.go; \
 	done
-
-.PHONY: release-with-docker
-release-with-docker:
-	docker build -t releaser:latest .
-	docker run --rm --privileged \
-		-v $(PWD):/go/src/github.com/sters/onstatic \
-		-w /go/src/github.com/sters/onstatic \
-		-e GITHUB_TOKEN=$(GITHUB_TOKEN) \
-		releaser:latest goreleaser release --rm-dist
