@@ -6,7 +6,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.3.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/golangci/golangci-lint v1.49.0
-	github.com/morikuni/failure v1.0.0
+	github.com/morikuni/failure v1.1.2
 	github.com/yudai/pp v2.0.1+incompatible
 	github.com/zaffka/zap-to-hclog v0.10.5
 	go.uber.org/zap v1.23.0
