@@ -9,7 +9,7 @@ require (
 	github.com/morikuni/failure v1.1.2
 	github.com/yudai/pp v2.0.1+incompatible
 	github.com/zaffka/zap-to-hclog v0.10.5
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.1.0
 )
 
